@@ -12,8 +12,6 @@
 // ============================================================================
 package org.talend.updates.runtime.model;
 
-import org.eclipse.equinox.p2.core.ProvisionException;
-
 /**
  * created by ggu on Jul 17, 2014 Detailled comment
  *
@@ -24,10 +22,10 @@ public class P2ExtraFeatureException extends Exception {
 
     /**
      * DOC sgandon ExtraFeatureException constructor comment.
-     * 
+     *
      * @param e
      */
-    public P2ExtraFeatureException(ProvisionException e) {
+    public P2ExtraFeatureException(Exception e) {
         super(e);
     }
 
