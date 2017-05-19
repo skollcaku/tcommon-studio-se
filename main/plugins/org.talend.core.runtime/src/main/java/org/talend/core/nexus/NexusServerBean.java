@@ -30,6 +30,8 @@ public class NexusServerBean {
 
     String snapshotRepId;
 
+    String repositoryBaseURI;
+
     public NexusServerBean() {
     }
 
@@ -145,6 +147,24 @@ public class NexusServerBean {
         this.official = official;
     }
 
+    /**
+     * Getter for repositoryBaseURI.
+     * 
+     * @return the repositoryBaseURI
+     */
+    public String getRepositoryBaseURI() {
+        return repositoryBaseURI;
+    }
+
+    /**
+     * Sets the repositoryBaseURI.
+     * 
+     * @param repositoryBaseURI the repositoryBaseURI to set
+     */
+    public void setRepositoryBaseURI(String repositoryBaseURI) {
+        this.repositoryBaseURI = repositoryBaseURI;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -154,6 +174,7 @@ public class NexusServerBean {
         result = prime * result + ((password == null) ? 0 : password.hashCode());
         result = prime * result + ((repositoryId == null) ? 0 : repositoryId.hashCode());
         result = prime * result + ((snapshotRepId == null) ? 0 : snapshotRepId.hashCode());
+        result = prime * result + ((repositoryBaseURI == null) ? 0 : repositoryBaseURI.hashCode());
         return result;
     }
 
@@ -209,6 +230,13 @@ public class NexusServerBean {
                 return false;
             }
         } else if (!snapshotRepId.equals(other.snapshotRepId)) {
+            return false;
+        }
+        if (repositoryBaseURI == null) {
+            if (other.repositoryBaseURI != null) {
+                return false;
+            }
+        } else if (!repositoryBaseURI.equals(other.repositoryBaseURI)) {
             return false;
         }
 

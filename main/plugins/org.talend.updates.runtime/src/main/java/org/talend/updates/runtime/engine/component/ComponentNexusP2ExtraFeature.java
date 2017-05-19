@@ -42,6 +42,7 @@ import org.talend.updates.runtime.model.ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
 import org.talend.updates.runtime.model.UpdateSiteLocationType;
+import org.talend.updates.runtime.nexus.component.NexusComponentsTransport;
 import org.talend.utils.io.FilesUtils;
 
 /**
@@ -298,7 +299,7 @@ public class ComponentNexusP2ExtraFeature extends P2ExtraFeature {
 
         final ComponentsInstallComponent installComponent = LocalComponentInstallHelper.getComponent();
         try {
-            ComponentsNexusTransport transport = new ComponentsNexusTransport(getNexusURL(), getNexusUser(), getNexusPass());
+            NexusComponentsTransport transport = new NexusComponentsTransport(getNexusURL(), getNexusUser(), getNexusPass());
             transport.downloadFile(progress, mvnURI, target);
 
             if (progress.isCanceled()) {
