@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubMonitor;
 import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.ExceptionHandler;
+import org.talend.core.nexus.NexusServerBean;
 import org.talend.updates.runtime.engine.component.ComponentNexusP2ExtraFeature;
 import org.talend.updates.runtime.i18n.Messages;
 import org.talend.updates.runtime.model.ExtraFeature;
@@ -38,6 +39,7 @@ import org.talend.updates.runtime.model.P2ExtraFeatureException;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.nexus.component.ComponentIndexManager;
 import org.talend.updates.runtime.nexus.component.NexusComponentsTransport;
+import org.talend.updates.runtime.nexus.component.NexusServerManager;
 
 /**
  * DOC Talend class global comment. Detailled comment
@@ -76,6 +78,34 @@ public class ComponentsNexusInstallFactory extends AbstractExtraUpdatesFactory {
         try {
             ComponentNexusP2ExtraFeature defaultFeature = new ComponentNexusP2ExtraFeature();
             return retrieveComponentsFromIndex(monitor, defaultFeature);
+        } catch (Exception e) {
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
+            return Collections.emptySet();
+        }
+    }
+
+    protected Set<P2ExtraFeature> getLocalNexusFeatures(IProgressMonitor monitor) {
+        IProgressMonitor progress = monitor;
+        if (progress == null) {
+            progress = new NullProgressMonitor();
+        }
+        try {
+            ComponentNexusP2ExtraFeature lnFeature = new ComponentNexusP2ExtraFeature();
+            NexusServerBean localNexusServer = NexusServerManager.getInstance().getLocalNexusServer();
+            if (localNexusServer == null) {
+                return Collections.emptySet();
+            }
+            if (monitor.isCanceled()) {
+                throw new OperationCanceledException();
+            }
+
+            lnFeature.setNexusURL(localNexusServer.getServer());
+            lnFeature.setNexusUser(localNexusServer.getUserName());
+            lnFeature.setNexusPass(localNexusServer.getPassword());
+
+            return retrieveComponentsFromIndex(monitor, lnFeature);
         } catch (Exception e) {
             if (CommonsPlugin.isDebugMode()) {
                 ExceptionHandler.process(e);

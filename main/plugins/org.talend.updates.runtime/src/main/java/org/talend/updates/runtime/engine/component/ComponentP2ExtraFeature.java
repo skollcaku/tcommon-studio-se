@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.eclipse.equinox.p2.core.IProvisioningAgentProvider;
@@ -50,6 +49,8 @@ import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
 import org.talend.updates.runtime.model.UpdateSiteLocationType;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
+import org.talend.updates.runtime.nexus.component.ComponentsDeploymentManager;
+import org.talend.updates.runtime.utils.PathUtils;
 import org.talend.utils.files.FileUtils;
 import org.talend.utils.io.FilesUtils;
 
@@ -60,8 +61,6 @@ import org.talend.utils.io.FilesUtils;
 public class ComponentP2ExtraFeature extends P2ExtraFeature {
 
     public static final String INDEX = "index"; //$NON-NLS-1$
-
-    public static final String FOLDER_COMPS = "components"; //$NON-NLS-1$
 
     public static final String FOLDER_M2_REPOSITORY = "m2/repository"; //$NON-NLS-1$
 
@@ -152,7 +151,7 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                     "ExtraFeaturesFactory.restore.config.error"))); //$NON-NLS-1$
         } finally {
             if (doInstallStatus != null && doInstallStatus.isOK()) {
-                afterInstall(allRepoUris);
+                afterInstall(progress, allRepoUris);
                 storeInstalledFeatureMessage();
             }
             // restore the config.ini
@@ -254,28 +253,28 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
         return Messages.createOkStatus("sucessfull.install.of.components", getName(), getVersion()); //$NON-NLS-1$
     }
 
-    protected void afterInstall(List<URI> allRepoUris) throws P2ExtraFeatureException {
+    protected void afterInstall(IProgressMonitor progress, List<URI> allRepoUris) throws P2ExtraFeatureException {
         if (allRepoUris == null || allRepoUris.size() == 0) {
             return;
         }
         try {
             // try to move install success to installed folder
-            File installedFolder = new File(Platform.getConfigurationLocation().getDataArea(FOLDER_COMPS).getPath());
-            final File installedComponentFolder = new File(installedFolder, FOLDER_COMPS);
-            if (!installedComponentFolder.exists()) {
-                installedComponentFolder.mkdirs();
-            }
+            File installedComponentFolder = PathUtils.getComponentsInstalledFolder();
             for (URI uri : allRepoUris) {
                 File compFile = new File(uri);
                 if (compFile.exists()) {
                     // sync the component libraries
                     File tempUpdateSiteFolder = getTempUpdateSiteFolder();
                     FilesUtils.unzip(compFile.getAbsolutePath(), tempUpdateSiteFolder.getAbsolutePath());
+
                     syncLibraries(tempUpdateSiteFolder);
                     syncM2Repository(tempUpdateSiteFolder);
-                    // TODO: deploy to local nexus
-                    FilesUtils.copyFile(compFile, new File(installedComponentFolder, compFile.getName()));
+
+                    File installedCompFile = new File(installedComponentFolder, compFile.getName());
+                    FilesUtils.copyFile(compFile, installedCompFile);
                     compFile.delete(); // delete original file.
+
+                    ComponentsDeploymentManager.getInstance().deployComponentsToLocalNexus(progress, installedCompFile);
                 }
             }
         } catch (Exception e) {
@@ -332,7 +331,7 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
     }
 
     protected File getTmpFolder() {
-        return new File(System.getProperty("user.dir") + '/' + FOLDER_COMPS); //$NON-NLS-1$
+        return new File(System.getProperty("user.dir") + '/' + PathUtils.FOLDER_COMPS); //$NON-NLS-1$
     }
 
 }

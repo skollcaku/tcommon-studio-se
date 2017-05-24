@@ -36,6 +36,11 @@ public class ComponentNexusP2ExtraFeatureTest {
             super(name, version, description, product, mvnURI, p2IuId);
         }
 
+        @Override
+        public String getP2ProfileId() {
+            return "profile"; //$NON-NLS-1$
+        }
+
     }
 
     @Test

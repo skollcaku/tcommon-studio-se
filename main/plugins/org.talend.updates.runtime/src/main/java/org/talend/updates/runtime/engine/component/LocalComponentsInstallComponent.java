@@ -182,7 +182,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                         ComponentP2ExtraFeature feature = new ComponentP2ExtraFeature(indexBean);
                         feature.setLogin(isLogin);
                         NullProgressMonitor progressMonitor = new NullProgressMonitor();
-                        if (feature.canBeInstalled(new NullProgressMonitor())) {
+                        if (feature.canBeInstalled(progressMonitor)) {
                             List<URI> repoUris = new ArrayList<>(1);
                             repoUris.add(URI.create("jar:" + f.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
                             analyzeInstalledStatus(feature.install(progressMonitor, repoUris));
