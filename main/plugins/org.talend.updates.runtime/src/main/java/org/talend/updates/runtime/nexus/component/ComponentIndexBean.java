@@ -13,15 +13,32 @@
 package org.talend.updates.runtime.nexus.component;
 
 import org.apache.commons.lang3.StringUtils;
+import org.talend.core.runtime.maven.MavenArtifact;
+import org.talend.core.runtime.maven.MavenUrlHelper;
 import org.talend.utils.json.JSONException;
 import org.talend.utils.json.JSONObject;
 
 /**
  * DOC ggu class global comment. Detailled comment
  */
-public class ComponentIndexBean {
+public class ComponentIndexBean implements Cloneable {
+
+    static final String DOT_SNAPSHOT = ".SNAPSHOT"; //$NON-NLS-1$
+
+    static final String SNAPSHOT = "-SNAPSHOT"; //$NON-NLS-1$
 
     private JSONObject settings = new JSONObject();
+
+    public int size() {
+        return settings.length();
+    }
+
+    /**
+     * the name can't be null and empty "", but can be spaces and other chars
+     */
+    private boolean validName(String name) {
+        return StringUtils.isNotEmpty(name);
+    }
 
     public boolean setValue(ComponentIndexNames name, String value) {
         return setValue(name.getName(), value);
@@ -29,7 +46,7 @@ public class ComponentIndexBean {
 
     public boolean setValue(String name, String value) {
         try {
-            if (name == null || name.isEmpty()) {
+            if (!validName(name)) {
                 return false;
             }
             // if(StringUtils.isNoneBlank(value)){
@@ -47,9 +64,18 @@ public class ComponentIndexBean {
         return false;
     }
 
+    public boolean setRequiredFieldsValue(String name, String bundleId, String version, String mvnURI) {
+        setValue(ComponentIndexNames.name, name);
+        setValue(ComponentIndexNames.bundle_id, bundleId);
+        setValue(ComponentIndexNames.version, version);
+        setValue(ComponentIndexNames.mvn_uri, mvnURI);
+
+        return validRequired();
+    }
+
     public String getValue(String name) {
         try {
-            if (name != null && !name.isEmpty() && settings.has(name)) {
+            if (validName(name) && settings.has(name)) {
                 return settings.getString(name);
             }
         } catch (JSONException e) {
@@ -63,7 +89,7 @@ public class ComponentIndexBean {
     }
 
     public boolean remove(String name) {
-        if (name != null && !name.isEmpty() && settings.has(name)) {
+        if (validName(name) && settings.has(name)) {
             final Object obj = settings.remove(name);
             if (obj != null) {
                 return true;
@@ -126,6 +152,56 @@ public class ComponentIndexBean {
         return true; // all set
     }
 
+    public ComponentIndexBean cloneWithoutSnapshot() throws CloneNotSupportedException {
+        ComponentIndexBean clone = this.clone();
+        if (isSnapshot()) {
+            if (!clone.validRequired()) {
+                throw new IllegalArgumentException("Missing required settings");
+            }
+            // remove snapshot
+            String version = clone.getVersion();
+            if (version.endsWith(DOT_SNAPSHOT)) {
+                version = version.substring(0, version.indexOf(DOT_SNAPSHOT));
+            }
+            if (version.endsWith(SNAPSHOT)) {
+                version = version.substring(0, version.indexOf(SNAPSHOT));
+            }
+
+            // set new version
+            clone.setValue(ComponentIndexNames.version, version);
+
+            // update mvn uri
+            final MavenArtifact artifact = MavenUrlHelper.parseMvnUrl(clone.getMvnURI());
+            artifact.setVersion(clone.getVersion());
+            String newMvnURI = MavenUrlHelper.generateMvnUrl(artifact.getGroupId(), artifact.getArtifactId(),
+                    artifact.getVersion(), artifact.getType(), artifact.getClassifier());
+            clone.setValue(ComponentIndexNames.mvn_uri, newMvnURI);
+
+        }
+
+        return clone;
+    }
+
+    public boolean isSnapshot() {
+        return getVersion().endsWith(SNAPSHOT) || getVersion().endsWith(DOT_SNAPSHOT);
+    }
+
+    public MavenArtifact getMavenArtifact() {
+        return MavenUrlHelper.parseMvnUrl(getMvnURI());
+    }
+
+    @Override
+    protected ComponentIndexBean clone() throws CloneNotSupportedException {
+        ComponentIndexBean clone = new ComponentIndexBean();
+        try {
+            JSONObject cloneSettings = new JSONObject(this.settings.toString());
+            clone.settings = cloneSettings;
+        } catch (JSONException e) {
+            //
+        }
+        return clone;
+    }
+
     @Override
     public String toString() {
         return getName() + '|' + getBundleId() + '|' + getVersion();
@@ -148,7 +224,7 @@ public class ComponentIndexBean {
             return true;
         if (obj == null)
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof ComponentIndexBean))
             return false;
         ComponentIndexBean other = (ComponentIndexBean) obj;
 
@@ -211,7 +287,7 @@ public class ComponentIndexBean {
             }
         }
 
-        return -2;
+        return -2; // different or unknown
     }
 
 }

@@ -15,14 +15,12 @@ package org.talend.updates.runtime.nexus.component;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
@@ -41,6 +39,7 @@ import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.utils.resource.FileExtensions;
 import org.talend.commons.utils.resource.UpdatesHelper;
@@ -80,7 +79,9 @@ public class ComponentIndexManager {
             Document document = saxReader.read(indexFile);
             return parse(document);
         } catch (DocumentException e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         }
         return Collections.emptyList();
 
@@ -177,7 +178,9 @@ public class ComponentIndexManager {
 
             return createIndexFile(indexFile, newIndexList);
         } catch (Exception e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         }
         return false;
     }
@@ -192,7 +195,9 @@ public class ComponentIndexManager {
         try {
             return createIndexFile(indexFile, newIndexList);
         } catch (IOException e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         }
         return false;
     }
@@ -309,14 +314,14 @@ public class ComponentIndexManager {
                     IPath p = new Path(path);
                     // must be in plugins
                     if (p.segmentCount() > 1 && p.removeLastSegments(1).lastSegment().equals(UpdatesHelper.FOLDER_PLUGINS)) {
-                        InputStream inputStream = zipFile.getInputStream(zipEntry);
-                        if (UpdatesHelper.isComponentJar(inputStream)) {
-                            JarInputStream jarStream = null;
+                        if (UpdatesHelper.isComponentJar(zipFile.getInputStream(zipEntry))) {
+                            JarInputStream jarEntryStream = null;
                             try {
-                                jarStream = new JarInputStream(inputStream);
+                                // must use another stream
+                                jarEntryStream = new JarInputStream(zipFile.getInputStream(zipEntry));
 
                                 // find the bundleId and version
-                                final Manifest manifest = jarStream.getManifest();
+                                final Manifest manifest = jarEntryStream.getManifest();
                                 if (manifest != null) {
                                     bundleId = getBundleSymbolicName(manifest);
                                     bundleVersion = manifest.getMainAttributes().getValue("Bundle-Version"); //$NON-NLS-1$
@@ -324,30 +329,44 @@ public class ComponentIndexManager {
 
                                 // find the pom.properties
                                 JarEntry jarEntry = null;
-                                while ((jarEntry = jarStream.getNextJarEntry()) != null) {
+                                while ((jarEntry = jarEntryStream.getNextJarEntry()) != null) {
                                     final String entryPath = jarEntry.getName();
                                     final Path fullPath = new Path(entryPath);
                                     final String fileName = fullPath.lastSegment();
 
                                     /*
                                      * for example,
-                                     * /META-INF/maven/org.talend.components/components-splunk/pom.properties
+                                     * META-INF/maven/org.talend.components/components-splunk/pom.properties
                                      */
                                     if (fileName.equals("pom.properties") //$NON-NLS-1$
                                             && entryPath.contains("META-INF/maven/")) { //$NON-NLS-1$
-                                        final InputStream propStream = zipFile.getInputStream(jarEntry);
-                                        if (propStream != null) {
-                                            Properties pomProp = new Properties();
-                                            pomProp.load(propStream);
 
-                                            String version = pomProp.getProperty("version"); //$NON-NLS-1$
-                                            String groupId = pomProp.getProperty("groupId"); //$NON-NLS-1$
-                                            String artifactId = pomProp.getProperty("artifactId"); //$NON-NLS-1$
-                                            mvnUri = MavenUrlHelper.generateMvnUrl(groupId, artifactId, version,
-                                                    FileExtensions.ZIP_FILE_SUFFIX, null);
+                                        // FIXME, didn't find one way to read the inner jar
+                                        // final InputStream propStream = jarFile.getInputStream(jarEntry);
+                                        // if (propStream != null) {
+                                        // Properties pomProp = new Properties();
+                                        // pomProp.load(propStream);
+                                        //
+                                        // String version = pomProp.getProperty("version"); //$NON-NLS-1$
+                                        // String groupId = pomProp.getProperty("groupId"); //$NON-NLS-1$
+                                        // String artifactId = pomProp.getProperty("artifactId"); //$NON-NLS-1$
+                                        // mvnUri = MavenUrlHelper.generateMvnUrl(groupId, artifactId, version,
+                                        // FileExtensions.ZIP_FILE_SUFFIX, null);
+                                        //
+                                        // propStream.close();
+                                        // }
 
-                                            propStream.close();
-                                        }
+                                        // FIXME, try the path way
+                                        // META-INF/maven/org.talend.components/components-splunk
+                                        IPath tmpMavenPath = fullPath.removeLastSegments(1);
+                                        String artifactId = tmpMavenPath.lastSegment(); // components-splunk
+                                        // META-INF/maven/org.talend.components
+                                        tmpMavenPath = tmpMavenPath.removeLastSegments(1);
+                                        String groupId = tmpMavenPath.lastSegment(); // org.talend.components
+
+                                        mvnUri = MavenUrlHelper.generateMvnUrl(groupId, artifactId, bundleVersion,
+                                                FileExtensions.ZIP_EXTENSION, null);
+
                                     } else
                                     /*
                                      * /OSGI-INF/installer$$splunk.xml
@@ -355,15 +374,18 @@ public class ComponentIndexManager {
                                     if (fileName.endsWith(FileExtensions.XML_FILE_SUFFIX)
                                             && fileName.startsWith(UpdatesHelper.NEW_COMPONENT_PREFIX)
                                             && entryPath.contains(UpdatesHelper.FOLDER_OSGI_INF + '/')) {
-                                        name = fullPath.removeFileExtension().lastSegment()
-                                                .substring(fileName.indexOf(UpdatesHelper.NEW_COMPONENT_PREFIX));
+                                        name = fullPath.removeFileExtension().lastSegment();
+                                        name = name.substring(name.indexOf(UpdatesHelper.NEW_COMPONENT_PREFIX)
+                                                + UpdatesHelper.NEW_COMPONENT_PREFIX.length());
                                     }
                                 }
                             } catch (IOException e) {
                                 //
                             } finally {
                                 try {
-                                    jarStream.close();
+                                    if (jarEntryStream != null) {
+                                        jarEntryStream.close();
+                                    }
                                 } catch (IOException e) {
                                     //
                                 }
@@ -375,9 +397,13 @@ public class ComponentIndexManager {
             }
 
         } catch (ZipException e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         } catch (IOException e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         } finally {
             if (zipFile != null) {
                 try {
@@ -387,15 +413,11 @@ public class ComponentIndexManager {
                 }
             }
         }
-
+        // set the required
         if (name != null && bundleId != null && bundleVersion != null && mvnUri != null) {
             final ComponentIndexBean indexBean = new ComponentIndexBean();
-            indexBean.setValue(ComponentIndexNames.name, name);
-            indexBean.setValue(ComponentIndexNames.bundle_id, bundleId);
-            indexBean.setValue(ComponentIndexNames.version, bundleVersion);
-            indexBean.setValue(ComponentIndexNames.mvn_uri, mvnUri);
-
-            if (indexBean.validRequired()) {
+            final boolean set = indexBean.setRequiredFieldsValue(name, bundleId, bundleVersion, mvnUri);
+            if (set) {
                 return indexBean;
             }
         }

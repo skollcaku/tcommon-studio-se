@@ -21,32 +21,43 @@ import java.util.List;
 public class ComponentStatus {
 
     /*
-     * not existed
+     * not existed any components.
      */
-    public final static int NEW = 1 << 1;
+    private final static int NEW = 1 << 1;
 
     /*
      * existed same one
      */
-    public final static int EXIST = 1 << 2;
+    private final static int EXIST = 1 << 2;
 
     /*
      * it's latest version
      */
-    public final static int LATEST_VERSION = 1 << 3;
+    private final static int LATEST_VERSION = 1 << 3;
 
     /*
      * it's lower version
      */
-    public final static int LOWER_VERSION = 1 << 4;
+    private final static int LOWER_VERSION = 1 << 4;
 
     /*
-     * 
+     * not existed at all, must be new and latest version.
      */
     public final static int NEW_LATEST = NEW | LATEST_VERSION;
 
+    /*
+     * not existed at all, but just lower version.
+     */
+    public final static int NEW_LOWER = NEW | LOWER_VERSION;
+
+    /*
+     * existed one and be latest version too.
+     */
     public final static int EXIST_LATEST = EXIST | LATEST_VERSION;
 
+    /*
+     * existed one, but not latest version.
+     */
     public final static int EXIST_LOWER = EXIST | LOWER_VERSION;
 
     /*

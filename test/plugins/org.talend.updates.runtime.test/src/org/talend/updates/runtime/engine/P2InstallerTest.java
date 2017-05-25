@@ -36,6 +36,8 @@ public class P2InstallerTest {
 
     public static final String TEST_COMP_MYJIRA = "resources/components/components-myjira-0.16.0-SNAPSHOT-updatesite.zip";
 
+    public static final String TEST_COMP_FAKE_MYJIRA = "resources/components/components-myjira-0.16.0-SNAPSHOT-fake.zip";
+
     class P2InstallerTestClass extends P2Installer {
 
         protected Set<InstalledUnit> installPatchRepository(File metadataRepository, File artifactRepository)

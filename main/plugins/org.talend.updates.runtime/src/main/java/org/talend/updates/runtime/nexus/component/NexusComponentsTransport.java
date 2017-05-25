@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Authenticator;
 import java.net.HttpURLConnection;
 import java.net.PasswordAuthentication;
@@ -30,10 +31,12 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -46,6 +49,7 @@ import org.talend.commons.utils.network.NetworkUtil;
 import org.talend.core.nexus.NexusServerUtils;
 import org.talend.core.runtime.maven.MavenArtifact;
 import org.talend.core.runtime.maven.MavenUrlHelper;
+import org.talend.designer.maven.model.TalendMavenConstants;
 import org.talend.designer.maven.utils.PomUtil;
 import org.talend.updates.runtime.engine.HttpClientTransport;
 
@@ -69,6 +73,10 @@ public class NexusComponentsTransport {
 
     protected String getNexusUser() {
         return nexusUser;
+    }
+
+    public char[] getNexusPass() {
+        return nexusPass;
     }
 
     protected String getNexusPassStr() {
@@ -246,10 +254,6 @@ public class NexusComponentsTransport {
      * 
      * upload the file to remote nexus, and base one the maven artifact.
      * 
-     * @param monitor
-     * @param uploadFile
-     * @param artifact
-     * @throws Exception
      */
     public void doHttpUpload(IProgressMonitor monitor, final File uploadFile, final MavenArtifact artifact) throws Exception {
         if (monitor == null) {
@@ -268,17 +272,113 @@ public class NexusComponentsTransport {
             throw new IllegalArgumentException("Must provide the maven artifact, can't be null"); //$NON-NLS-1$
         }
 
+        // existed in nexus server, try to delete old one
+        if (isAvailable(monitor, artifact)) {
+            doHttpDelete(monitor, artifact);
+        }
+
         new HttpClientTransport(getNexusURL(), getNexusUser(), getNexusPassStr()) {
 
             @Override
             protected HttpResponse execute(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI)
                     throws Exception {
-                HttpPut httpPut = new HttpPut(targetURI.toString());
-                httpPut.setEntity(new FileEntity(uploadFile));
-                HttpResponse response = httpClient.execute(httpPut);
-                return response;
+                if (monitor.isCanceled()) {
+                    throw new OperationCanceledException();
+                }
+                return httpPut(monitor, httpClient, targetURI, uploadFile);
             }
         }.doRequest(monitor, artifact);
+
+        // upload one default pom also
+        final MavenArtifact pomArtifact = artifact.clone();
+        pomArtifact.setType(TalendMavenConstants.PACKAGING_POM);
+
+        if (isAvailable(monitor, pomArtifact)) {
+            doHttpDelete(monitor, pomArtifact);
+        }
+
+        new HttpClientTransport(getNexusURL(), getNexusUser(), getNexusPassStr()) {
+
+            @Override
+            protected HttpResponse execute(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI)
+                    throws Exception {
+                if (monitor.isCanceled()) {
+                    throw new OperationCanceledException();
+                }
+                final File pomFile = new File(PomUtil.generatePom2(artifact));
+                try {
+                    return httpPut(monitor, httpClient, targetURI, pomFile);
+                } finally {
+                    pomFile.delete(); // finish to upload, delete the temp pom file.
+                }
+            }
+        }.doRequest(monitor, pomArtifact);
+    }
+
+    protected HttpResponse httpPut(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI, File uploadFile)
+            throws IOException {
+        HttpPut httpPut = new HttpPut(targetURI.toString());
+        FileEntity fileEntity = new FileEntity(uploadFile);
+        httpPut.setEntity(fileEntity);
+
+        HttpResponse execute = httpClient.execute(httpPut);
+
+        EntityUtils.consume(fileEntity);
+        return execute;
+    }
+
+    /**
+     * 
+     * DOC ggu Comment method "doHttpDelete".
+     * 
+     * delete/remove from nexus.
+     */
+    public void doHttpDelete(IProgressMonitor monitor, final MavenArtifact artifact) throws Exception {
+        if (monitor == null) {
+            monitor = new NullProgressMonitor();
+        }
+        if (monitor.isCanceled()) {
+            throw new OperationCanceledException();
+        }
+        if (artifact == null) {
+            throw new IllegalArgumentException("Must provide the maven artifact, can't be null"); //$NON-NLS-1$
+        }
+
+        if (isAvailable(monitor, artifact)) {
+            new HttpClientTransport(getNexusURL(), getNexusUser(), getNexusPassStr()) {
+
+                @Override
+                protected HttpResponse execute(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI)
+                        throws Exception {
+                    if (monitor.isCanceled()) {
+                        throw new OperationCanceledException();
+                    }
+                    return httpDelete(monitor, httpClient, targetURI);
+                }
+            }.doRequest(monitor, artifact);
+        }
+
+        // remove pom also
+        final MavenArtifact pomArtifact = artifact.clone();
+        pomArtifact.setType(TalendMavenConstants.PACKAGING_POM);
+        if (isAvailable(monitor, pomArtifact)) {
+            new HttpClientTransport(getNexusURL(), getNexusUser(), getNexusPassStr()) {
+
+                @Override
+                protected HttpResponse execute(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI)
+                        throws Exception {
+                    if (monitor.isCanceled()) {
+                        throw new OperationCanceledException();
+                    }
+                    return httpDelete(monitor, httpClient, targetURI);
+                }
+            }.doRequest(monitor, pomArtifact);
+        }
+    }
+
+    protected HttpResponse httpDelete(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI) throws IOException {
+        HttpDelete httpDelete = new HttpDelete(targetURI);
+        return httpClient.execute(httpDelete);
     }
 
     /**
@@ -287,11 +387,6 @@ public class NexusComponentsTransport {
      * 
      * download the maven artifact from the remote nexus to target file, if download falure, will remove the unfinished
      * file.
-     * 
-     * @param monitor
-     * @param targetFile
-     * @param artifact
-     * @throws Exception
      */
     public void doHttpDownload(IProgressMonitor monitor, File targetFile, MavenArtifact artifact) throws Exception {
         if (monitor == null) {
@@ -315,57 +410,74 @@ public class NexusComponentsTransport {
                 if (monitor.isCanceled()) {
                     throw new OperationCanceledException();
                 }
-                HttpGet httpGet = new HttpGet(targetURI);
-                HttpResponse response = httpClient.execute(httpGet);
+                HttpResponse response = httpGet(monitor, httpClient, targetURI);
                 if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
                     // final String fileName = getFileName(response);
 
-                    BufferedOutputStream fileStream = null;
-                    InputStream httpStream = null;
-
+                    BufferedOutputStream outStream = null;
                     boolean downloaded = false;
                     try {
                         HttpEntity entity = response.getEntity();
-                        httpStream = entity.getContent();
+                        InputStream httpStream = entity.getContent();
 
-                        fileStream = new BufferedOutputStream(new FileOutputStream(targetFile));
-                        byte[] buffer = new byte[1024 * 8];
-                        int ch = 0;
-                        while ((ch = httpStream.read(buffer)) != -1) {
-                            fileStream.write(buffer, 0, ch);
+                        outStream = new BufferedOutputStream(new FileOutputStream(targetFile));
 
-                            if (monitor.isCanceled()) {
-                                throw new OperationCanceledException();
-                            }
-                        }
-                        fileStream.flush();
-
-                        downloaded = true;
+                        downloaded = writeStream(monitor, httpStream, outStream);
                     } finally {
-                        if (fileStream != null) {
+                        if (outStream != null) {
                             try {
-                                fileStream.close();
+                                outStream.close();
                             } catch (IOException e) {
                                 //
                             }
                         }
-                        if (httpStream != null) {
-                            try {
-                                httpStream.close();
-                            } catch (IOException e) {
-                                //
-                            }
-                        }
-                        if (!downloaded) { // download failure
-                            if (targetFile.exists()) {
-                                targetFile.delete(); // remove the wrong file.
-                            }
+                        if (!downloaded && targetFile.exists()) { // download failure
+                            targetFile.delete(); // remove the wrong file.
                         }
                     }
                 }
                 return response;
             }
         }.doRequest(monitor, artifact);
+    }
+
+    protected HttpResponse httpGet(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI) throws IOException {
+        HttpGet httpGet = new HttpGet(targetURI);
+        return httpClient.execute(httpGet);
+    }
+
+    protected boolean writeStream(IProgressMonitor monitor, InputStream httpStream, OutputStream fileStream) throws IOException {
+        boolean success = false;
+        try {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int ch = 0;
+            while ((ch = httpStream.read(buffer)) != -1) {
+                fileStream.write(buffer, 0, ch);
+
+                if (monitor.isCanceled()) {
+                    throw new OperationCanceledException();
+                }
+            }
+            fileStream.flush();
+
+            success = true;
+        } finally {
+            if (fileStream != null) {
+                try {
+                    fileStream.close();
+                } catch (IOException e) {
+                    //
+                }
+            }
+            if (httpStream != null) {
+                try {
+                    httpStream.close();
+                } catch (IOException e) {
+                    //
+                }
+            }
+        }
+        return success;
     }
 
     private String getFileName(HttpResponse response) {
@@ -415,8 +527,7 @@ public class NexusComponentsTransport {
                     if (monitor.isCanceled()) {
                         throw new OperationCanceledException();
                     }
-                    HttpGet httpGet = new HttpGet(targetURI);
-                    HttpResponse response = httpClient.execute(httpGet);
+                    HttpResponse response = httpGet(monitor, httpClient, targetURI);
                     final int statusCode = response.getStatusLine().getStatusCode();
                     if (statusCode == HttpStatus.SC_OK) { // 200
                         // ok
@@ -436,4 +547,5 @@ public class NexusComponentsTransport {
         }
         return false;
     }
+
 }

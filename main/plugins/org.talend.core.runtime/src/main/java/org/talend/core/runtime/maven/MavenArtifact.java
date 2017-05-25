@@ -17,7 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * DOC ggu class global comment. Detailled comment
  */
-public class MavenArtifact {
+public class MavenArtifact implements Cloneable {
 
     private static final char GROUP_SEPARATOR = '.';
 
@@ -250,12 +250,20 @@ public class MavenArtifact {
         return true;
     }
 
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
         return "MavenArtifact [groupId=" + this.groupId + ", artifactId=" + this.artifactId + ", version=" + this.version + "]";
+
+    }
+
+    @Override
+    public MavenArtifact clone() throws CloneNotSupportedException {
+        return (MavenArtifact) super.clone();
     }
 
 }

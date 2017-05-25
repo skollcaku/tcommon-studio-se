@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
+import org.talend.commons.CommonsPlugin;
 import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.utils.resource.UpdatesHelper;
 import org.talend.core.nexus.NexusServerBean;
@@ -52,9 +53,20 @@ public class NexusShareComponentsManager {
         this.compNexusServer = compNexusServer;
         this.indexManager = new ComponentIndexManager();
 
-        this.nexusTransport = new NexusComponentsTransport(this.compNexusServer.getRepositoryBaseURI(),
-                this.compNexusServer.getUserName(), this.compNexusServer.getPassword() != null ? this.compNexusServer
-                        .getPassword().toCharArray() : null);
+        this.nexusTransport = createNexusComponentsTransport();
+    }
+
+    NexusComponentsTransport createNexusComponentsTransport() {
+        return new NexusComponentsTransport(this.compNexusServer.getRepositoryBaseURI(), this.compNexusServer.getUserName(),
+                this.compNexusServer.getPassword() != null ? this.compNexusServer.getPassword().toCharArray() : null);
+    }
+
+    public ComponentIndexManager getIndexManager() {
+        return indexManager;
+    }
+
+    public NexusComponentsTransport getNexusTransport() {
+        return nexusTransport;
     }
 
     File getWorkFolder() {
@@ -74,7 +86,7 @@ public class NexusShareComponentsManager {
         }
     }
 
-    private MavenArtifact getIndexArtifact() {
+    public MavenArtifact getIndexArtifact() {
         final MavenArtifact indexArtifact = new ComponentNexusP2ExtraFeature().getIndexArtifact();
         return indexArtifact;
     }
@@ -90,7 +102,7 @@ public class NexusShareComponentsManager {
         return indexManager.parse(downloadIndexFile(monitor));
     }
 
-    private File downloadIndexFile(IProgressMonitor monitor) {
+    File downloadIndexFile(IProgressMonitor monitor) {
         if (monitor == null) {
             monitor = new NullProgressMonitor();
         }
@@ -109,7 +121,9 @@ public class NexusShareComponentsManager {
                 return indexFile;
             }
         } catch (Exception e) {
-            ExceptionHandler.process(e);
+            if (CommonsPlugin.isDebugMode()) {
+                ExceptionHandler.process(e);
+            }
         }
         return null;
     }
@@ -147,7 +161,7 @@ public class NexusShareComponentsManager {
         // 0. if no index bean, retrieve from zip file directly.
         if (compIndexBean == null) {
             // build on index from component zip file directly.
-            compIndexBean = new ComponentIndexManager().create(componentZipFile);
+            compIndexBean = getIndexManager().create(componentZipFile);
             if (compIndexBean == null) {
                 return false;
             }
@@ -172,33 +186,37 @@ public class NexusShareComponentsManager {
 
         // 2. update index
 
-        // if not existed in nexus server, should try to upload new
+        // if not existed in nexus server, should try to upload new index
+        final MavenArtifact indexArtifact = getIndexArtifact();
         File indexFile = null;
-        if (nexusTransport.isAvailable(subMonitor, getIndexArtifact())) {
+        if (nexusTransport.isAvailable(subMonitor, indexArtifact)) {
             indexFile = downloadIndexFile(monitor);
             if (indexFile == null) { // download failure
                 return false;
             }
-            boolean added = indexManager.updateIndexFile(indexFile, compIndexBean);
-            if (!added) {
+            boolean updated = indexManager.updateIndexFile(indexFile, compIndexBean);
+            if (!updated) {
                 return false;
             }
         } else { // create new
-            indexFile = new File(getWorkFolder(), mvnArtifact.getFileName());
-            indexManager.createIndexFile(indexFile, compIndexBean);
+            indexFile = new File(getWorkFolder(), indexArtifact.getFileName());
+            boolean created = indexManager.createIndexFile(indexFile, compIndexBean);
+            if (!created) {
+                return false;
+            }
         }
         subMonitor.worked(1);
         if (subMonitor.isCanceled()) {
             throw new OperationCanceledException();
         }
 
-        if (indexFile.exists()) { // update failure or didn't create
+        if (!indexFile.exists()) { // update failure or didn't create
             return false;
         }
         // 3. upload updated index
         try {
-            nexusTransport.doHttpUpload(monitor, indexFile, getIndexArtifact());
 
+            nexusTransport.doHttpUpload(monitor, indexFile, indexArtifact);
             subMonitor.worked(1);
         } catch (Exception e) {
             ExceptionHandler.process(e);
@@ -253,17 +271,34 @@ public class NexusShareComponentsManager {
     }
 
     public ComponentStatus checkComponent(IProgressMonitor monitor, ComponentIndexBean compIndexBean) {
+        if (monitor == null) {
+            monitor = new NullProgressMonitor();
+        }
+        if (monitor.isCanceled()) {
+            throw new OperationCanceledException();
+        }
         if (compIndexBean == null) {
             return ComponentStatus.NONE;
         }
+
         final List<ComponentIndexBean> remoteComponents = retrieveComponents(monitor);
         return checkComponent(monitor, remoteComponents, compIndexBean);
     }
 
     public ComponentStatus checkComponent(IProgressMonitor monitor, final List<ComponentIndexBean> remoteComponents,
             ComponentIndexBean compIndexBean) {
+        if (monitor == null) {
+            monitor = new NullProgressMonitor();
+        }
+        if (monitor.isCanceled()) {
+            throw new OperationCanceledException();
+        }
+
         if (remoteComponents == null || compIndexBean == null) {
             return ComponentStatus.NONE;
+        }
+        if (remoteComponents.isEmpty()) {
+            return new ComponentStatus(compIndexBean, ComponentStatus.NEW_LATEST);
         }
         // find all existed
         List<ComponentIndexBean> existedComps = new ArrayList<ComponentIndexBean>();
@@ -286,7 +321,7 @@ public class NexusShareComponentsManager {
 
         int statusCode = 0;
         if (existedComps.isEmpty()) { // empty,
-            statusCode = ComponentStatus.NEW;
+            statusCode = ComponentStatus.NEW_LATEST;
         } else {
             boolean existed = existedComps.contains(compIndexBean); // check required settings
             // the latest existed one
@@ -302,7 +337,7 @@ public class NexusShareComponentsManager {
                 if (existed) {
                     statusCode = ComponentStatus.EXIST_LOWER;
                 } else { // current is old version,but not existed
-                    statusCode = ComponentStatus.LOWER_VERSION;
+                    statusCode = ComponentStatus.NEW_LOWER;
                 }
             } else if (compareVersion == 1) { // current one is new latest version
                 if (existed) {// should never happen

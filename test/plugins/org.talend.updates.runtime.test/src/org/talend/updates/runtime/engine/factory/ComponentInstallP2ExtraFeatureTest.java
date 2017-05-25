@@ -441,6 +441,5 @@ public class ComponentInstallP2ExtraFeatureTest {
 
         assertNotNull(workFolder);
         assertFalse(workFolder.exists()); // clean done
-
     }
 }

@@ -46,14 +46,19 @@ public abstract class HttpClientTransport {
         this.password = password;
     }
 
-    URI ceateURI(MavenArtifact artifact) throws URISyntaxException {
+    public URI createURI(MavenArtifact artifact) throws URISyntaxException {
+        if (artifact == null) {
+            return null;
+        }
         // like https://talend-update.talend.com/nexus/content/repositories/components/
         String baseRepoURI = baseURI;
         if (baseRepoURI == null) {
             throw new IllegalArgumentException("Must provide the nexus base repository uri");
         }
         String artifactPath = PomUtil.getArtifactPath(artifact);
-
+        if (artifactPath == null) {
+            return null;
+        }
         if (!baseRepoURI.endsWith(NexusConstants.SLASH)) {
             baseRepoURI += NexusConstants.SLASH;
         }
@@ -62,7 +67,7 @@ public abstract class HttpClientTransport {
     }
 
     public void doRequest(IProgressMonitor monitor, MavenArtifact artifact) throws Exception {
-        doRequest(monitor, ceateURI(artifact));
+        doRequest(monitor, createURI(artifact));
     }
 
     public void doRequest(IProgressMonitor monitor, URI requestURI) throws Exception {
@@ -72,7 +77,9 @@ public abstract class HttpClientTransport {
         if (monitor.isCanceled()) {
             throw new OperationCanceledException();
         }
-
+        if (requestURI == null) {
+            return;
+        }
         DefaultHttpClient httpClient = new DefaultHttpClient();
         try {
             if (StringUtils.isNotBlank(username)) { // set username
@@ -82,6 +89,9 @@ public abstract class HttpClientTransport {
             HttpResponse response = execute(monitor, httpClient, requestURI);
 
             processResponseCode(response);
+        } catch (org.apache.http.conn.HttpHostConnectException e) {
+            // connection failure
+            throw e;
         } catch (Exception e) {
             throw new Exception(requestURI.toString(), e);
         } finally {
@@ -95,6 +105,9 @@ public abstract class HttpClientTransport {
         if (responseCode > 399) {
             if (responseCode == HttpStatus.SC_INTERNAL_SERVER_ERROR) { // 500
                 // ignore this error , if already exist on server and deploy again will get this error
+            } else if (responseCode == HttpStatus.SC_BAD_REQUEST || // 400
+                    responseCode == HttpStatus.SC_NOT_FOUND) { // 404
+                throw new BusinessException(Integer.toString(responseCode) + ':' + statusLine.getReasonPhrase());
             } else if (responseCode == HttpStatus.SC_UNAUTHORIZED) { // 401
                 throw new BusinessException("Authrity failed");
             } else {
@@ -105,4 +118,5 @@ public abstract class HttpClientTransport {
 
     protected abstract HttpResponse execute(IProgressMonitor monitor, DefaultHttpClient httpClient, URI targetURI)
             throws Exception;
+
 }

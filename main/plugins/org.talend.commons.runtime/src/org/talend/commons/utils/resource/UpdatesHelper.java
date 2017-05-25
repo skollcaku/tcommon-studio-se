@@ -267,7 +267,9 @@ public class UpdatesHelper {
                 //
             } finally {
                 try {
-                    jarStream.close();
+                    if (jarStream != null) {
+                        jarStream.close();
+                    }
                 } catch (IOException e) {
                     //
                 }

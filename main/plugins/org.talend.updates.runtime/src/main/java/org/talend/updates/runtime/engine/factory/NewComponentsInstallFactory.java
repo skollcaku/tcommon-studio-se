@@ -26,7 +26,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.equinox.p2.core.ProvisionException;
-import org.talend.commons.CommonsPlugin;
 import org.talend.commons.runtime.helper.LocalComponentInstallHelper;
 import org.talend.commons.runtime.service.ComponentsInstallComponent;
 import org.talend.commons.utils.VersionUtils;
@@ -206,9 +205,7 @@ public class NewComponentsInstallFactory extends AbstractExtraUpdatesFactory {
         @Override
         protected void afterInstall() {
             if (getWorkFolder() != null) {
-                if (!CommonsPlugin.isDebugMode()) { // if debug, keep the files.
-                    FilesUtils.deleteFolder(getWorkFolder(), true);
-                }
+                FilesUtils.deleteFolder(getWorkFolder(), true);
             }
         }
 
