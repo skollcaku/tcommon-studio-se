@@ -12,7 +12,11 @@
 // ============================================================================
 package org.talend.updates.runtime.engine.component;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,6 +85,7 @@ public class ComponentP2ExtraFeatureTest {
     public void after() {
         FilesUtils.deleteFolder(tmpFolder, true);
         FilesUtils.deleteFolder(tempP2Folder, true);
+        FilesUtils.deleteFolder(feature.getTmpFolder(), true);
     }
 
     private final class ComponentP2ExtraFeatureForJUnit extends ComponentP2ExtraFeature {
@@ -97,7 +102,7 @@ public class ComponentP2ExtraFeatureTest {
 
         /*
          * (non-Javadoc)
-         *
+         * 
          * @see org.talend.updates.model.P2ExtraFeature#getP2ProfileId()
          */
         @Override
@@ -110,8 +115,8 @@ public class ComponentP2ExtraFeatureTest {
     @Test
     public void testConstructor() {
         ComponentP2ExtraFeature extraFeature = new ComponentP2ExtraFeatureForJUnit("FileInput", "0.1.0", "File input components",
-                "tos_di,tos_bd,tp_bd",
-                "mvn:org.talend.components/components-file-definition/0.1.0/zip", "org.talend.components.file");
+                "tos_di,tos_bd,tp_bd", "mvn:org.talend.components/components-file-definition/0.1.0/zip",
+                "org.talend.components.file");
         assertEquals("FileInput", extraFeature.getName()); //$NON-NLS-1$
         assertEquals("0.1.0", extraFeature.getVersion()); //$NON-NLS-1$
         assertEquals("File input components", extraFeature.getDescription()); //$NON-NLS-1$
@@ -140,16 +145,16 @@ public class ComponentP2ExtraFeatureTest {
     @Test
     public void testExtraFeatureHasUpdateAndInstallIt() throws Exception {
         assertFalse(feature.isInstalled(NULL_PROGRESS_MONITOR));
-        List<URI> repoUris = Collections
-                .singletonList(URI.create("jar:" + TEST_COMPONENTS_V1_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
+        List<URI> repoUris = Collections.singletonList(URI
+                .create("jar:" + TEST_COMPONENTS_V1_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
         feature.install(NULL_PROGRESS_MONITOR, repoUris);
         try {
             assertTrue(feature.isInstalled(NULL_PROGRESS_MONITOR));
             ExtraFeature updateFeature = feature.createFeatureIfUpdates(NULL_PROGRESS_MONITOR, repoUris);
             assertNull(updateFeature);
             // check for an update using another update site
-            repoUris = Collections
-                    .singletonList(URI.create("jar:" + TEST_COMPONENTS_V2_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
+            repoUris = Collections.singletonList(URI
+                    .create("jar:" + TEST_COMPONENTS_V2_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
             updateFeature = feature.createFeatureIfUpdates(NULL_PROGRESS_MONITOR, repoUris);
             assertNotNull(updateFeature);
             updateFeature.install(NULL_PROGRESS_MONITOR, repoUris);
@@ -165,8 +170,8 @@ public class ComponentP2ExtraFeatureTest {
     @Test
     public void testExtraFeatureNoUpdateAvailable() throws ProvisionException, P2ExtraFeatureException {
         assertFalse(feature.isInstalled(NULL_PROGRESS_MONITOR));
-        List<URI> repoUris = Collections
-                .singletonList(URI.create("jar:" + TEST_COMPONENTS_V1_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
+        List<URI> repoUris = Collections.singletonList(URI
+                .create("jar:" + TEST_COMPONENTS_V1_UPDATE_SITE_FILE.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
         feature.install(NULL_PROGRESS_MONITOR, repoUris);
         try {
             assertTrue(feature.isInstalled(NULL_PROGRESS_MONITOR));

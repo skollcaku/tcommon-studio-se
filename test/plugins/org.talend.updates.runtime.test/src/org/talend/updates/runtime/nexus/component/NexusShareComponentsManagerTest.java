@@ -84,7 +84,8 @@ public class NexusShareComponentsManagerTest {
         if (!CommonsPlugin.isDebugMode() && !nexusTransport.isAvailable()) {
             return; // if not debug, won't do test
         }
-        Assert.assertTrue("Make sure the Nexus server settings are correct for Integration Test", nexusTransport.isAvailable());
+        Assert.assertTrue("Make sure the Nexus server settings are correct in IntegrationTestHelper",
+                nexusTransport.isAvailable());
 
         IProgressMonitor monitor = new NullProgressMonitor();
         final ComponentIndexManager indexManager = shareManager.getIndexManager();

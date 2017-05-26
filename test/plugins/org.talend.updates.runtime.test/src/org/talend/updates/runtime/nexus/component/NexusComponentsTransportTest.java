@@ -109,7 +109,8 @@ public class NexusComponentsTransportTest {
         if (!CommonsPlugin.isDebugMode() && !myNexusTransport.isAvailable()) {
             return; // if not debug, won't do test
         }
-        Assert.assertTrue("Make sure the Nexus server settings are correct for Integration Test", myNexusTransport.isAvailable());
+        Assert.assertTrue("Make sure the Nexus server settings are correct in IntegrationTestHelper",
+                myNexusTransport.isAvailable());
 
         IProgressMonitor monitor = new NullProgressMonitor();
 
@@ -196,7 +197,8 @@ public class NexusComponentsTransportTest {
         if (!CommonsPlugin.isDebugMode() && !myNexusTransport.isAvailable()) {
             return; // if not debug, won't do test
         }
-        Assert.assertTrue("Make sure the Nexus server settings are correct for Integration Test", myNexusTransport.isAvailable());
+        Assert.assertTrue("Make sure the Nexus server settings are correct in IntegrationTestHelper",
+                myNexusTransport.isAvailable());
 
         IProgressMonitor monitor = new NullProgressMonitor();
 

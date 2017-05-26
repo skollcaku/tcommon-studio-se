@@ -24,9 +24,9 @@ public class IntegrationTestHelper {
      */
     public static NexusServerBean getNexusServerReleaseBean() {
 
-        String nexusURL = "http://192.168.33.29:8081/nexus/content/repositories/components/";
+        String nexusURL = "http://localhost:8081/nexus/content/repositories/components/";
         String nexusUser = "admin";
-        String nexusPass = "Talend123";
+        String nexusPass = "xxxx";
 
         final NexusServerBean nexusServerBean = new NexusServerBean();
         nexusServerBean.setRepositoryBaseURI(nexusURL);
