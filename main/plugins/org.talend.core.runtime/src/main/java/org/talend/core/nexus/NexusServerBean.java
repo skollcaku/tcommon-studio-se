@@ -30,8 +30,6 @@ public class NexusServerBean {
 
     String snapshotRepId;
 
-    String repositoryBaseURI;
-
     public NexusServerBean() {
     }
 
@@ -41,7 +39,7 @@ public class NexusServerBean {
 
     /**
      * Getter for server.
-     * 
+     *
      * @return the server
      */
     public String getServer() {
@@ -50,7 +48,7 @@ public class NexusServerBean {
 
     /**
      * Sets the server.
-     * 
+     *
      * @param server the server to set
      */
     public void setServer(String server) {
@@ -59,7 +57,7 @@ public class NexusServerBean {
 
     /**
      * Getter for userName.
-     * 
+     *
      * @return the userName
      */
     public String getUserName() {
@@ -68,7 +66,7 @@ public class NexusServerBean {
 
     /**
      * Sets the userName.
-     * 
+     *
      * @param userName the userName to set
      */
     public void setUserName(String userName) {
@@ -77,7 +75,7 @@ public class NexusServerBean {
 
     /**
      * Getter for password.
-     * 
+     *
      * @return the password
      */
     public String getPassword() {
@@ -86,7 +84,7 @@ public class NexusServerBean {
 
     /**
      * Sets the password.
-     * 
+     *
      * @param password the password to set
      */
     public void setPassword(String password) {
@@ -95,7 +93,7 @@ public class NexusServerBean {
 
     /**
      * Getter for repositoryId.
-     * 
+     *
      * @return the repositoryId
      */
     public String getRepositoryId() {
@@ -104,7 +102,7 @@ public class NexusServerBean {
 
     /**
      * Sets the repositoryId.
-     * 
+     *
      * @param repositoryId the repositoryId to set
      */
     public void setRepositoryId(String repositoryId) {
@@ -113,7 +111,7 @@ public class NexusServerBean {
 
     /**
      * Getter for snapshotRepId.
-     * 
+     *
      * @return the snapshotRepId
      */
     public String getSnapshotRepId() {
@@ -122,7 +120,7 @@ public class NexusServerBean {
 
     /**
      * Sets the snapshotRepId.
-     * 
+     *
      * @param snapshotRepId the snapshotRepId to set
      */
     public void setSnapshotRepId(String snapshotRepId) {
@@ -131,7 +129,7 @@ public class NexusServerBean {
 
     /**
      * Getter for official.
-     * 
+     *
      * @return the official
      */
     public boolean isOfficial() {
@@ -140,29 +138,21 @@ public class NexusServerBean {
 
     /**
      * Sets the official.
-     * 
+     *
      * @param official the official to set
      */
     public void setOfficial(boolean official) {
         this.official = official;
     }
 
-    /**
-     * Getter for repositoryBaseURI.
-     * 
-     * @return the repositoryBaseURI
-     */
-    public String getRepositoryBaseURI() {
+    public String getRepositoryURI() {
+        String repositoryBaseURI = this.server;
+        if (repositoryBaseURI.endsWith(NexusConstants.SLASH)) {
+            repositoryBaseURI = repositoryBaseURI.substring(0, repositoryBaseURI.length() - 1);
+        }
+        repositoryBaseURI += NexusConstants.CONTENT_REPOSITORIES;
+        repositoryBaseURI += repositoryId + NexusConstants.SLASH;
         return repositoryBaseURI;
-    }
-
-    /**
-     * Sets the repositoryBaseURI.
-     * 
-     * @param repositoryBaseURI the repositoryBaseURI to set
-     */
-    public void setRepositoryBaseURI(String repositoryBaseURI) {
-        this.repositoryBaseURI = repositoryBaseURI;
     }
 
     @Override
@@ -174,13 +164,12 @@ public class NexusServerBean {
         result = prime * result + ((password == null) ? 0 : password.hashCode());
         result = prime * result + ((repositoryId == null) ? 0 : repositoryId.hashCode());
         result = prime * result + ((snapshotRepId == null) ? 0 : snapshotRepId.hashCode());
-        result = prime * result + ((repositoryBaseURI == null) ? 0 : repositoryBaseURI.hashCode());
         return result;
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
@@ -230,13 +219,6 @@ public class NexusServerBean {
                 return false;
             }
         } else if (!snapshotRepId.equals(other.snapshotRepId)) {
-            return false;
-        }
-        if (repositoryBaseURI == null) {
-            if (other.repositoryBaseURI != null) {
-                return false;
-            }
-        } else if (!repositoryBaseURI.equals(other.repositoryBaseURI)) {
             return false;
         }
 

@@ -14,6 +14,10 @@ package org.talend.updates.runtime.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Platform;
 
@@ -28,6 +32,8 @@ public class PathUtils {
     public static final String FOLDER_INSTALLED = "installed"; //$NON-NLS-1$
 
     public static final String FOLDER_SHARED = "shared"; //$NON-NLS-1$
+
+    private static final String P2_REP_FILE_URI_PATTERN = "^jar:(.+)!\\/$"; //$NON-NLS-1$
 
     public static File getComponentsFolder() throws IOException {
         File componentsFolder = new File(Platform.getConfigurationLocation().getDataArea(FOLDER_COMPS).getPath());
@@ -51,6 +57,25 @@ public class PathUtils {
             installedComponentFolder.mkdirs();
         }
         return installedComponentFolder;
+    }
+
+    public static URI getP2RepURIFromCompFile(File compFile) {
+        if (compFile == null) {
+            return null;
+        }
+        return URI.create("jar:" + compFile.toURI().toString() + "!/"); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    public static File getCompFileFromP2RepURI(URI p2RepURI) throws MalformedURLException {
+        if (p2RepURI == null) {
+            return null;
+        }
+        String filePath = p2RepURI.toString();
+        Matcher matcher = Pattern.compile(P2_REP_FILE_URI_PATTERN).matcher(filePath);
+        if (matcher.find()) {
+            filePath = matcher.group(1);
+        }
+        return new File(URI.create(filePath).toURL().getFile());
     }
 
 }

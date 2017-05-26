@@ -16,6 +16,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 
 import org.eclipse.core.runtime.Platform;
 import org.junit.Test;
@@ -45,12 +46,43 @@ public class PathUtilsTest {
     }
 
     @Test
-    public void testgGetComponentsSharedFolder() throws IOException {
+    public void testGetComponentsSharedFolder() throws IOException {
         File sharedFolder = PathUtils.getComponentsSharedFolder();
         assertNotNull(sharedFolder);
         assertTrue(sharedFolder.exists());
         File expectedFolder = new File(PathUtils.getComponentsFolder(), PathUtils.FOLDER_SHARED);
         assertEquals(expectedFolder, sharedFolder);
+    }
+
+    @Test
+    public void testGetP2RepURIFromCompFile() throws IOException {
+        URI p2RepURI = PathUtils.getP2RepURIFromCompFile(null);
+        assertNull(p2RepURI);
+
+        File compFile = File.createTempFile("testcomp", null); //$NON-NLS-1$
+        p2RepURI = PathUtils.getP2RepURIFromCompFile(compFile);
+        URI expectURI = URI.create("jar:" + compFile.toURI().toString() + "!/"); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals(expectURI, p2RepURI);
+
+        compFile.delete();
+    }
+
+    @Test
+    public void testGetCompFileFromP2RepURI() throws IOException {
+        File compFile = PathUtils.getCompFileFromP2RepURI(null);
+        assertNull(compFile);
+
+        File testCompFile = File.createTempFile("testcomp", null); //$NON-NLS-1$
+        URI testP2RepURI = URI.create("jar:" + testCompFile.toURI().toString() + "!/"); //$NON-NLS-1$ //$NON-NLS-2$
+        compFile = PathUtils.getCompFileFromP2RepURI(testP2RepURI);
+        assertEquals(testCompFile, compFile);
+        assertTrue(compFile.exists());
+
+        compFile = PathUtils.getCompFileFromP2RepURI(testCompFile.toURI());
+        assertEquals(testCompFile, compFile);
+        assertTrue(compFile.exists());
+
+        testCompFile.delete();
     }
 
 }

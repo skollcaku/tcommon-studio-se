@@ -49,6 +49,7 @@ import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
 import org.talend.updates.runtime.model.UpdateSiteLocationType;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
+import org.talend.updates.runtime.nexus.component.ComponentIndexManager;
 import org.talend.updates.runtime.nexus.component.ComponentsDeploymentManager;
 import org.talend.updates.runtime.utils.PathUtils;
 import org.talend.utils.files.FileUtils;
@@ -68,6 +69,8 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
 
     private String product, mvnURI;
 
+    private URI repositoryURI;
+
     private boolean isLogin;
 
     private File tmpM2RepoFolder;
@@ -79,6 +82,11 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
     public ComponentP2ExtraFeature(ComponentIndexBean indexBean) {
         this(indexBean.getName(), indexBean.getVersion(), indexBean.getDescription(), indexBean.getProduct(), indexBean
                 .getMvnURI(), indexBean.getBundleId());
+    }
+
+    public ComponentP2ExtraFeature(File componentZipFile) {
+        this(new ComponentIndexManager().create(componentZipFile));
+        this.repositoryURI = URI.create("jar:" + componentZipFile.toURI().toString() + "!/"); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     public ComponentP2ExtraFeature(String name, String version, String description, String product, String mvnURI, String p2IuId) {
@@ -236,7 +244,9 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                 return Messages.createCancelStatus("ComponentP2ExtraFeature.user.cancel.installation.of.components", //$NON-NLS-1$
                         getName(), getVersion());
             }
-
+            if (status.getSeverity() == IStatus.ERROR) {
+                return status;
+            }
             log.debug("installed new components " + getName() + " (" + getVersion() + ") with status :" + status); //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
         } catch (URISyntaxException e) {
             return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getName(), //$NON-NLS-1$
@@ -261,8 +271,8 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
             // try to move install success to installed folder
             File installedComponentFolder = PathUtils.getComponentsInstalledFolder();
             for (URI uri : allRepoUris) {
-                File compFile = new File(uri);
-                if (compFile.exists()) {
+                File compFile = PathUtils.getCompFileFromP2RepURI(uri);
+                if (compFile != null && compFile.exists()) {
                     // sync the component libraries
                     File tempUpdateSiteFolder = getTempUpdateSiteFolder();
                     FilesUtils.unzip(compFile.getAbsolutePath(), tempUpdateSiteFolder.getAbsolutePath());
@@ -280,6 +290,14 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
         } catch (Exception e) {
             throw new P2ExtraFeatureException(e);
         }
+    }
+
+    @Override
+    public URI getP2RepositoryURI() {
+        if (this.repositoryURI != null) {
+            return this.repositoryURI;
+        }
+        return super.getP2RepositoryURI();
     }
 
     protected void syncLibraries(File updatesiteFolder) throws IOException {

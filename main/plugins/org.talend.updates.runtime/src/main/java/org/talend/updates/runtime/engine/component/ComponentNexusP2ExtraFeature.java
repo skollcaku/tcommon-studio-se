@@ -14,18 +14,24 @@ package org.talend.updates.runtime.engine.component;
 
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.equinox.p2.metadata.IInstallableUnit;
+import org.eclipse.equinox.p2.metadata.Version;
 import org.talend.designer.maven.utils.PomUtil;
 import org.talend.updates.runtime.i18n.Messages;
+import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.nexus.component.NexusComponentsTransport;
+import org.talend.updates.runtime.utils.PathUtils;
 import org.talend.utils.io.FilesUtils;
 
 /**
@@ -46,8 +52,6 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
     private char[] nexusPass;
 
     protected File downloadFolder;
-
-    protected boolean restartable;
 
     protected boolean keepDownloadFile = false;
 
@@ -130,8 +134,29 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
     }
 
     @Override
-    public boolean needRestart() {
-        return restartable;
+    public P2ExtraFeature getInstalledFeature(IProgressMonitor progress) throws P2ExtraFeatureException {
+        P2ExtraFeature extraFeature = null;
+        try {
+            if (!this.isInstalled(progress)) {
+                extraFeature = this;
+            } else {// else already installed so try to find updates
+                boolean isUpdate = true;
+                org.eclipse.equinox.p2.metadata.Version currentVer = Version.create(this.getVersion());
+                Set<IInstallableUnit> installedIUs = getInstalledIUs(getP2IuId(), progress);
+                for (IInstallableUnit iu : installedIUs) {
+                    if (currentVer.compareTo(iu.getVersion()) <= 0) {
+                        isUpdate = false;
+                        break;
+                    }
+                }
+                if (isUpdate) {
+                    extraFeature = this;
+                }
+            }
+        } catch (Exception e) {
+            throw new P2ExtraFeatureException(e);
+        }
+        return extraFeature;
     }
 
     @Override
@@ -166,7 +191,10 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
                 return Messages.createErrorStatus(null, "failed.install.of.feature", "Download the failure for " + getMvnURI()); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
-            return super.install(progress, allRepoUris);
+            List<URI> repoUris = new ArrayList<>(1);
+            repoUris.add(PathUtils.getP2RepURIFromCompFile(target));
+
+            return super.install(progress, repoUris);
         } catch (Exception e) {
             return Messages.createErrorStatus(e);
         } finally {

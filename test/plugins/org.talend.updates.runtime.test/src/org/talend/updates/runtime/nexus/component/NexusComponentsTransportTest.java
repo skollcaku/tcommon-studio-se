@@ -12,8 +12,7 @@
 // ============================================================================
 package org.talend.updates.runtime.nexus.component;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -104,7 +103,7 @@ public class NexusComponentsTransportTest {
     public void test_uploadXml_myServerInReleaseRepo_IntegrationTest() throws Exception {
         final NexusServerBean nexusServerBean = IntegrationTestHelper.getNexusServerReleaseBean();
         NexusComponentsTransportTestClass myNexusTransport = new NexusComponentsTransportTestClass(
-                nexusServerBean.getRepositoryBaseURI(), nexusServerBean.getUserName(), nexusServerBean.getPassword()
+                nexusServerBean.getRepositoryURI(), nexusServerBean.getUserName(), nexusServerBean.getPassword()
                         .toCharArray());
         if (!CommonsPlugin.isDebugMode() && !myNexusTransport.isAvailable()) {
             return; // if not debug, won't do test
@@ -192,7 +191,7 @@ public class NexusComponentsTransportTest {
     public void test_uploadZip_myServerInReleaseRepo_IntegrationTest() throws Exception {
         final NexusServerBean nexusServerBean = IntegrationTestHelper.getNexusServerReleaseBean();
         NexusComponentsTransportTestClass myNexusTransport = new NexusComponentsTransportTestClass(
-                nexusServerBean.getRepositoryBaseURI(), nexusServerBean.getUserName(), nexusServerBean.getPassword()
+                nexusServerBean.getRepositoryURI(), nexusServerBean.getUserName(), nexusServerBean.getPassword()
                         .toCharArray());
         if (!CommonsPlugin.isDebugMode() && !myNexusTransport.isAvailable()) {
             return; // if not debug, won't do test

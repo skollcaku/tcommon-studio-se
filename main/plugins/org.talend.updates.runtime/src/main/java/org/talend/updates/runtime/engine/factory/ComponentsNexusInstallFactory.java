@@ -101,7 +101,7 @@ public class ComponentsNexusInstallFactory extends AbstractExtraUpdatesFactory {
                 throw new OperationCanceledException();
             }
 
-            lnFeature.setNexusURL(localNexusServer.getServer());
+            lnFeature.setNexusURL(localNexusServer.getRepositoryURI());
             lnFeature.setNexusUser(localNexusServer.getUserName());
             lnFeature.setNexusPass(localNexusServer.getPassword());
 

@@ -52,9 +52,10 @@ public class NexusShareComponentsManagerTest {
     @BeforeClass
     public static void parepare() {
         serverBean = new NexusServerBean();
-        serverBean.setRepositoryBaseURI("http://localhost:8081/nexus/content/repositories/components/");
+        serverBean.setServer("http://localhost:8081/nexus");
         serverBean.setUserName("");
         serverBean.setPassword("");
+        serverBean.setRepositoryId("components");
     }
 
     @AfterClass
@@ -258,7 +259,7 @@ public class NexusShareComponentsManagerTest {
 
             @Override
             NexusComponentsTransport createNexusComponentsTransport() {
-                return new NexusComponentsTransport(serverBean.getRepositoryBaseURI(), serverBean.getUserName(),
+                return new NexusComponentsTransport(serverBean.getRepositoryURI(), serverBean.getUserName(),
                         serverBean.getPassword() != null ? serverBean.getPassword().toCharArray() : null) {
 
                     @Override
@@ -294,7 +295,7 @@ public class NexusShareComponentsManagerTest {
 
             @Override
             NexusComponentsTransport createNexusComponentsTransport() {
-                return new NexusComponentsTransport(serverBean.getRepositoryBaseURI(), serverBean.getUserName(),
+                return new NexusComponentsTransport(serverBean.getRepositoryURI(), serverBean.getUserName(),
                         serverBean.getPassword() != null ? serverBean.getPassword().toCharArray() : null) {
 
                     @Override
@@ -331,7 +332,7 @@ public class NexusShareComponentsManagerTest {
 
             @Override
             NexusComponentsTransport createNexusComponentsTransport() {
-                return new NexusComponentsTransport(serverBean.getRepositoryBaseURI(), serverBean.getUserName(),
+                return new NexusComponentsTransport(serverBean.getRepositoryURI(), serverBean.getUserName(),
                         serverBean.getPassword() != null ? serverBean.getPassword().toCharArray() : null) {
 
                     @Override
@@ -377,7 +378,7 @@ public class NexusShareComponentsManagerTest {
 
             @Override
             NexusComponentsTransport createNexusComponentsTransport() {
-                return new NexusComponentsTransport(serverBean.getRepositoryBaseURI(), serverBean.getUserName(),
+                return new NexusComponentsTransport(serverBean.getRepositoryURI(), serverBean.getUserName(),
                         serverBean.getPassword() != null ? serverBean.getPassword().toCharArray() : null) {
 
                     @Override
@@ -398,6 +399,7 @@ public class NexusShareComponentsManagerTest {
                 };
             }
 
+            @Override
             File downloadIndexFile(IProgressMonitor monitor) {
                 return tempIndexFile;
             }

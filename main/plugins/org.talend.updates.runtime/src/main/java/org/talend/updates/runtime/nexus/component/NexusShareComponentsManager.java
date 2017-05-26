@@ -47,7 +47,7 @@ public class NexusShareComponentsManager {
 
     /**
      * for NexusServerBean, the repositoryBaseURI , userName and password are required.
-     * 
+     *
      */
     public NexusShareComponentsManager(final NexusServerBean compNexusServer) {
         this.compNexusServer = compNexusServer;
@@ -57,7 +57,7 @@ public class NexusShareComponentsManager {
     }
 
     NexusComponentsTransport createNexusComponentsTransport() {
-        return new NexusComponentsTransport(this.compNexusServer.getRepositoryBaseURI(), this.compNexusServer.getUserName(),
+        return new NexusComponentsTransport(this.compNexusServer.getRepositoryURI(), this.compNexusServer.getUserName(),
                 this.compNexusServer.getPassword() != null ? this.compNexusServer.getPassword().toCharArray() : null);
     }
 
@@ -77,7 +77,7 @@ public class NexusShareComponentsManager {
     }
 
     /**
-     * 
+     *
      * after uses this manager, better do clean.
      */
     public void clean() {
@@ -129,20 +129,20 @@ public class NexusShareComponentsManager {
     }
 
     /**
-     * 
+     *
      * DOC ggu Comment method "deployComponent".
-     * 
+     *
      * deploy the component zip file to remote nexus, and will read some index details from zip file.
-     * 
+     *
      */
     public boolean deployComponent(IProgressMonitor monitor, File componentZipFile) {
         return deployComponent(monitor, componentZipFile, null);
     }
 
     /**
-     * 
+     *
      * DOC ggu Comment method "deployComponent".
-     * 
+     *
      * deploy the component zip file to remote nexus, if index bean is null, will try to retrieve from zip file.
      */
     public boolean deployComponent(IProgressMonitor monitor, File componentZipFile, ComponentIndexBean compIndexBean) {
@@ -226,9 +226,9 @@ public class NexusShareComponentsManager {
     }
 
     /**
-     * 
+     *
      * DOC ggu Comment method "deployComponents".
-     * 
+     *
      * will share all components under the folder, and return the shared files.
      */
     public List<File> deployComponents(IProgressMonitor monitor, File compFolder) {

@@ -31,6 +31,7 @@ import org.talend.commons.runtime.service.PatchComponent;
 import org.talend.commons.utils.resource.UpdatesHelper;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.nexus.component.ComponentIndexManager;
+import org.talend.updates.runtime.utils.PathUtils;
 
 /**
  * DOC ggu class global comment. Detailled comment
@@ -151,7 +152,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                 // because in patches folder, will do after install user components.
                 installFromFolder(getPatchesFolder());
             }
-            return needRelaunch = failureMessage == null;
+            return needRelaunch = failureMessage == null && installedMessage != null;
         } catch (Exception e) {
             if (!CommonsPlugin.isHeadless()) {
                 // make sure to popup error dialog for studio
@@ -179,12 +180,12 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                             getFailedComponents().add(f);
                             continue;
                         }
-                        ComponentP2ExtraFeature feature = new ComponentP2ExtraFeature(indexBean);
+                        ComponentP2ExtraFeature feature = new ComponentP2ExtraFeature(f);
                         feature.setLogin(isLogin);
                         NullProgressMonitor progressMonitor = new NullProgressMonitor();
                         if (feature.canBeInstalled(progressMonitor)) {
                             List<URI> repoUris = new ArrayList<>(1);
-                            repoUris.add(URI.create("jar:" + f.toURI().toString() + "!/")); //$NON-NLS-1$//$NON-NLS-2$
+                            repoUris.add(PathUtils.getP2RepURIFromCompFile(f));
                             analyzeInstalledStatus(feature.install(progressMonitor, repoUris));
                         }
                     } catch (Exception e) { // sometime, if reinstall it, will got one exception also.
