@@ -204,10 +204,11 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
         switch (status.getSeverity()) {
         case IStatus.ERROR:
         case IStatus.CANCEL:
-            failureMessage = failureMessage.concat("\n").concat(status.getMessage()); //$NON-NLS-1$
+            failureMessage = StringUtils.trimToEmpty(failureMessage).concat(System.lineSeparator()).concat(status.getMessage());
             break;
         default:
-            installedMessage = installedMessage.concat("\n").concat(status.getMessage()); //$NON-NLS-1$
+            installedMessage = StringUtils.trimToEmpty(installedMessage).concat(System.lineSeparator())
+                    .concat(status.getMessage());
             break;
         }
     }

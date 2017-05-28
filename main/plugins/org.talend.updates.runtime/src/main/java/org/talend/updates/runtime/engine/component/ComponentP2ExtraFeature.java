@@ -209,8 +209,8 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
             // show the installation unit
             log.debug("ius to be installed:" + toInstall); //$NON-NLS-1$
             if (toInstall.isEmpty()) {
-                return Messages.createErrorStatus(null, "ComponentP2ExtraFeature.could.not.find.components", getName(), //$NON-NLS-1$
-                        getP2IuId(), Arrays.toString(allRepoUris.toArray(new URI[allRepoUris.size()])));
+                return Messages.createErrorStatus(null, "ComponentP2ExtraFeature.could.not.find.components", getP2IuId(), //$NON-NLS-1$
+                        getVersion(), Arrays.toString(allRepoUris.toArray(new URI[allRepoUris.size()])));
             }
 
             // install
@@ -219,10 +219,10 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
             IStatus installResolvedStatus = installOperation.resolveModal(subMonitor.newChild(1));
             if (subMonitor.isCanceled()) {
                 return Messages.createCancelStatus("ComponentP2ExtraFeature.user.cancel.installation.of.components", //$NON-NLS-1$
-                        getName(), getVersion());
+                        getP2IuId(), getVersion());
             }
             if (installResolvedStatus.getSeverity() == IStatus.ERROR) {
-                return Messages.createErrorStatus(null, "ComponentP2ExtraFeature.error.installing.new.components", getName(), //$NON-NLS-1$
+                return Messages.createErrorStatus(null, "ComponentP2ExtraFeature.error.installing.new.components", getP2IuId(), //$NON-NLS-1$
                         getVersion(), installOperation.getResolutionDetails());
             } // else perform the installlation
             IPhaseSet talendPhaseSet = PhaseSetFactory
@@ -232,27 +232,27 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                     .newChild(1));
             if (subMonitor.isCanceled()) {
                 return Messages.createCancelStatus("ComponentP2ExtraFeature.user.cancel.installation.of.components", //$NON-NLS-1$
-                        getName(), getVersion());
+                        getP2IuId(), getVersion());
             }
             if (provisioningJob == null) {
                 return Messages.createErrorStatus(null, "ComponentP2ExtraFeature.error.installing.new.components", //$NON-NLS-1$
-                        getName(), getVersion(), installOperation.getResolutionDetails());
+                        getP2IuId(), getVersion(), installOperation.getResolutionDetails());
             }
             provisioningJob.setPhaseSet(talendPhaseSet);
             IStatus status = provisioningJob.run(subMonitor.newChild(1));
             if (subMonitor.isCanceled()) {
                 return Messages.createCancelStatus("ComponentP2ExtraFeature.user.cancel.installation.of.components", //$NON-NLS-1$
-                        getName(), getVersion());
+                        getP2IuId(), getVersion());
             }
             if (status.getSeverity() == IStatus.ERROR) {
                 return status;
             }
-            log.debug("installed new components " + getName() + " (" + getVersion() + ") with status :" + status); //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
+            log.debug("installed new components " + getP2IuId() + " (" + getVersion() + ") with status :" + status); //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
         } catch (URISyntaxException e) {
-            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getName(), //$NON-NLS-1$
+            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
                     getVersion());
         } catch (ProvisionException e) {
-            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getName(), //$NON-NLS-1$
+            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
                     getVersion());
         } finally {
             if (agent != null) {// agent creation did not fail
@@ -260,7 +260,7 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                 agent.stop();
             }
         }
-        return Messages.createOkStatus("sucessfull.install.of.components", getName(), getVersion()); //$NON-NLS-1$
+        return Messages.createOkStatus("sucessfull.install.of.components", getP2IuId(), getVersion()); //$NON-NLS-1$
     }
 
     protected void afterInstall(IProgressMonitor progress, List<URI> allRepoUris) throws P2ExtraFeatureException {
