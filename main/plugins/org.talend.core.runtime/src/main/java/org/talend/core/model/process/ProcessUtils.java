@@ -975,7 +975,8 @@ public final class ProcessUtils {
             if (pt.getName().equals("DISTRIBUTION")) { //$NON-NLS-1$
                 String value = pt.getValue();
                 if ("MICROSOFT_HD_INSIGHT".equals(value) //$NON-NLS-1$
-                        || "GOOGLE_CLOUD_DATAPROC".equals(value)) { //$NON-NLS-1$
+                        || "GOOGLE_CLOUD_DATAPROC".equals(value) //$NON-NLS-1$
+                        || "CLOUDERA_ALTUS".equals(value)) { //$NON-NLS-1$
                     return true;
                 }
             }

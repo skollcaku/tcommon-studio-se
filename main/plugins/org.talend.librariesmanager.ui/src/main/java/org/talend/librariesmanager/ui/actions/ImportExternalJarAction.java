@@ -34,6 +34,7 @@ import org.talend.commons.ui.runtime.image.ImageProvider;
 import org.talend.commons.utils.io.FilesUtils;
 import org.talend.commons.utils.workbench.resources.ResourceUtils;
 import org.talend.core.GlobalServiceRegister;
+import org.talend.core.model.general.ModuleToInstall;
 import org.talend.core.model.general.Project;
 import org.talend.core.runtime.process.ITalendProcessJavaProject;
 import org.talend.designer.runprocess.IRunProcessService;
@@ -80,7 +81,7 @@ public class ImportExternalJarAction extends Action {
         return handleImportJarDialog(shell, null);
     }
 
-    public String[] handleImportJarDialog(Shell shell, String moduleName) {
+    public String[] handleImportJarDialog(Shell shell, ModuleToInstall module) {
         FileDialog fileDialog = new FileDialog(shell, SWT.OPEN | SWT.MULTI);
         fileDialog.setFilterExtensions(FilesUtils.getAcceptJARFilesSuffix());
         fileDialog.open();
@@ -91,6 +92,12 @@ public class ImportExternalJarAction extends Action {
 
             @Override
             public void run() {
+                String moduleName = null;
+                String mvnUri = null;
+                if (module != null) {
+                    moduleName = module.getName();
+                    mvnUri = module.getMavenUri();
+                }
                 for (int i = 0; i < fileNames.length; i++) {
                     String fileName = fileNames[i];
                     File file = new File(path + File.separatorChar + fileName);
@@ -109,7 +116,8 @@ public class ImportExternalJarAction extends Action {
                             file = tempFile;
                             fileNames[i] = file.getName();
                         }
-                        LibManagerUiPlugin.getDefault().getLibrariesService().deployLibrary(file.toURL());
+
+                        LibManagerUiPlugin.getDefault().getLibrariesService().deployLibrary(file.toURL(), mvnUri);
                         if (tempFile != null) {
                             FilesUtils.deleteFile(tempFile, true);
                         }

@@ -44,7 +44,7 @@ public class NexusServerManager {
         if (nexusService == null) {
             return null;
         }
-        return nexusService.getTalendNexusServerBean(REPOSITORY_ID);
+        return nexusService.getPublishNexusServerBean(REPOSITORY_ID);
     }
 
 }
