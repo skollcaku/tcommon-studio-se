@@ -160,8 +160,12 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
     }
 
     @Override
-    public IStatus install(IProgressMonitor progress, List<URI> allRepoUris) throws P2ExtraFeatureException {
-        if (progress.isCanceled()) {
+    public IStatus install(IProgressMonitor monitor, List<URI> allRepoUris) throws P2ExtraFeatureException {
+        return this.install(monitor);
+    }
+
+    public IStatus install(IProgressMonitor monitor) throws P2ExtraFeatureException {
+        if (monitor.isCanceled()) {
             throw new OperationCanceledException();
         }
         final File workFolder = getDownloadFolder();
@@ -182,9 +186,9 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
 
         try {
             NexusComponentsTransport transport = new NexusComponentsTransport(getNexusURL(), getNexusUser(), getNexusPass());
-            transport.downloadFile(progress, getMvnURI(), target);
+            transport.downloadFile(monitor, getMvnURI(), target);
 
-            if (progress.isCanceled()) {
+            if (monitor.isCanceled()) {
                 throw new OperationCanceledException();
             }
             if (!target.exists()) {
@@ -194,7 +198,7 @@ public class ComponentNexusP2ExtraFeature extends ComponentP2ExtraFeature {
             List<URI> repoUris = new ArrayList<>(1);
             repoUris.add(PathUtils.getP2RepURIFromCompFile(target));
 
-            return super.install(progress, repoUris);
+            return super.install(monitor, repoUris);
         } catch (Exception e) {
             return Messages.createErrorStatus(e);
         } finally {

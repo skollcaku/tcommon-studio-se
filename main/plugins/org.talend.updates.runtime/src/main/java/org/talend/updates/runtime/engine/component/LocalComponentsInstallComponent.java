@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -40,9 +39,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
 
     private boolean needRelaunch;
 
-    private String installedMessage;
-
-    private String failureMessage;
+    private InstallComponentMessages messages = new InstallComponentMessages();
 
     private File userComponentFolder = null;
 
@@ -76,8 +73,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
             failedComponents.clear();
         }
         failedComponents = new ArrayList<>();
-        installedMessage = null;
-        failureMessage = null;
+        messages.reset();
     }
 
     @Override
@@ -152,7 +148,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                 // because in patches folder, will do after install user components.
                 installFromFolder(getPatchesFolder());
             }
-            return needRelaunch = failureMessage == null && installedMessage != null;
+            return needRelaunch = (getFailureMessage() == null && getInstalledMessages() != null);
         } catch (Exception e) {
             if (!CommonsPlugin.isHeadless()) {
                 // make sure to popup error dialog for studio
@@ -186,7 +182,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                         if (feature.canBeInstalled(progressMonitor)) {
                             List<URI> repoUris = new ArrayList<>(1);
                             repoUris.add(PathUtils.getP2RepURIFromCompFile(f));
-                            analyzeInstalledStatus(feature.install(progressMonitor, repoUris));
+                            messages.analyzeStatus(feature.install(progressMonitor, repoUris));
                         }
                     } catch (Exception e) { // sometime, if reinstall it, will got one exception also.
                         // won't block others to install.
@@ -200,27 +196,14 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
         }
     }
 
-    public void analyzeInstalledStatus(IStatus status) {
-        switch (status.getSeverity()) {
-        case IStatus.ERROR:
-        case IStatus.CANCEL:
-            failureMessage = StringUtils.trimToEmpty(failureMessage).concat(System.lineSeparator()).concat(status.getMessage());
-            break;
-        default:
-            installedMessage = StringUtils.trimToEmpty(installedMessage).concat(System.lineSeparator())
-                    .concat(status.getMessage());
-            break;
-        }
-    }
-
     @Override
     public String getInstalledMessages() {
-        return installedMessage;
+        return messages.getInstalledMessage();
     }
 
     @Override
     public String getFailureMessage() {
-        return failureMessage;
+        return messages.getFailureMessage();
     }
 
 }
