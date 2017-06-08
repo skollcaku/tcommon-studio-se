@@ -13,6 +13,7 @@
 package org.talend.updates.runtime.engine.component;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.eclipse.equinox.p2.core.IProvisioningAgentProvider;
@@ -37,9 +39,11 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
+import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.runtime.utils.io.FileCopyUtils;
 import org.talend.commons.utils.VersionUtils;
 import org.talend.commons.utils.resource.FileExtensions;
+import org.talend.commons.utils.resource.UpdatesHelper;
 import org.talend.core.runtime.maven.MavenArtifact;
 import org.talend.core.runtime.maven.MavenUrlHelper;
 import org.talend.librariesmanager.prefs.LibrariesManagerUtils;
@@ -51,6 +55,7 @@ import org.talend.updates.runtime.model.UpdateSiteLocationType;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.nexus.component.ComponentIndexManager;
 import org.talend.updates.runtime.nexus.component.ComponentsDeploymentManager;
+import org.talend.updates.runtime.utils.OsgiBundleInstaller;
 import org.talend.updates.runtime.utils.PathUtils;
 import org.talend.utils.files.FileUtils;
 import org.talend.utils.io.FilesUtils;
@@ -74,6 +79,8 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
     private boolean isLogin;
 
     private File tmpM2RepoFolder;
+
+    private boolean needRestart = false;
 
     public ComponentP2ExtraFeature() {
         //
@@ -142,6 +149,11 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
 
     public void setLogin(boolean isLogin) {
         this.isLogin = isLogin;
+    }
+
+    @Override
+    public boolean needRestart() {
+        return needRestart;
     }
 
     @Override
@@ -249,10 +261,12 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
             }
             log.debug("installed new components " + getP2IuId() + " (" + getVersion() + ") with status :" + status); //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
         } catch (URISyntaxException e) {
-            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
+            return Messages.createErrorStatus(e,
+                    "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
                     getVersion());
         } catch (ProvisionException e) {
-            return Messages.createErrorStatus(e, "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
+            return Messages.createErrorStatus(e,
+                    "ComponentP2ExtraFeature.error.installing.components.uri.exception", getP2IuId(), //$NON-NLS-1$
                     getVersion());
         } finally {
             if (agent != null) {// agent creation did not fail
@@ -285,6 +299,8 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                     compFile.delete(); // delete original file.
 
                     ComponentsDeploymentManager.getInstance().deployComponentsToLocalNexus(progress, installedCompFile);
+
+                    installAndStartComponent(tempUpdateSiteFolder);
                 }
             }
         } catch (Exception e) {
@@ -333,6 +349,39 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                     MavenRepoSynchronizer synchronizer = new MavenRepoSynchronizer(updatesiteLibFolder);
                     synchronizer.sync();
                 }
+            }
+        }
+    }
+
+    protected void installAndStartComponent(File tempUpdateSiteFolder) {
+        File tmpPluginsFolder = new File(tempUpdateSiteFolder, UpdatesHelper.FOLDER_PLUGINS);
+        if (!tmpPluginsFolder.exists()) {
+            return;
+        }
+        File[] bundleFiles = tmpPluginsFolder.listFiles(new FilenameFilter() {
+
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(FileExtensions.JAR_FILE_SUFFIX);
+            }
+        });
+
+        if (bundleFiles == null) {
+            return;
+        }
+        for (File b : bundleFiles) {
+            try {
+                // the plugins folder in product
+                File pluginsFolder = new File(Platform.getInstallLocation().getDataArea(UpdatesHelper.FOLDER_PLUGINS).getPath());
+                // the same jar name should be existed in plugins folder after install via p2
+                File bundleFile = new File(pluginsFolder, b.getName());
+
+                boolean started = OsgiBundleInstaller.installAndStartBundle(bundleFile);
+                needRestart = !started; // if not install, try to restart
+            } catch (Exception e) {
+                needRestart = true; // if install error, try to restart
+                ExceptionHandler.process(e);
+                return; // no need install others
             }
         }
     }

@@ -44,6 +44,7 @@ import org.talend.commons.exception.ExceptionHandler;
 import org.talend.commons.utils.resource.FileExtensions;
 import org.talend.commons.utils.resource.UpdatesHelper;
 import org.talend.core.runtime.maven.MavenUrlHelper;
+import org.talend.updates.runtime.utils.JarMenifestUtil;
 
 /**
  * DOC ggu class global comment. Detailled comment
@@ -323,8 +324,8 @@ public class ComponentIndexManager {
                                 // find the bundleId and version
                                 final Manifest manifest = jarEntryStream.getManifest();
                                 if (manifest != null) {
-                                    bundleId = getBundleSymbolicName(manifest);
-                                    bundleVersion = manifest.getMainAttributes().getValue("Bundle-Version"); //$NON-NLS-1$
+                                    bundleId = JarMenifestUtil.getBundleSymbolicName(manifest);
+                                    bundleVersion = JarMenifestUtil.getBundleVersion(manifest);
                                 }
 
                                 // find the pom.properties
@@ -424,14 +425,4 @@ public class ComponentIndexManager {
         return null;
     }
 
-    private String getBundleSymbolicName(Manifest manifest) {
-        String name = manifest.getMainAttributes().getValue("Bundle-SymbolicName"); //$NON-NLS-1$
-        if (name != null) {
-            final int indexOf = name.indexOf(';');
-            if (indexOf > 0)
-                name = name.substring(0, indexOf);
-            return name;
-        }
-        return null;
-    }
 }

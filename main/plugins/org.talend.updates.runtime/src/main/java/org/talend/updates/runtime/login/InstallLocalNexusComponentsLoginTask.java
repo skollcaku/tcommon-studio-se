@@ -31,6 +31,7 @@ import org.talend.updates.runtime.model.ExtraFeature;
 import org.talend.updates.runtime.model.FeatureCategory;
 import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
+import org.talend.updates.runtime.utils.OsgiBundleInstaller;
 
 /**
  * 
@@ -80,6 +81,9 @@ public class InstallLocalNexusComponentsLoginTask extends AbstractLoginTask {
                 MessageDialog.openInformation(PlatformUI.getWorkbench().getDisplay().getActiveShell(),
                         "Install components from Nexus", messages.getInstalledMessage());
             }
+            if (messages.isOk() && !messages.isNeedRestart()) {
+                OsgiBundleInstaller.reloadComponents();
+            }
         } catch (Exception e) {
             throw new InvocationTargetException(e);
         }
@@ -96,7 +100,9 @@ public class InstallLocalNexusComponentsLoginTask extends AbstractLoginTask {
         if (feature instanceof ComponentNexusP2ExtraFeature) {
             ComponentNexusP2ExtraFeature compFeature = (ComponentNexusP2ExtraFeature) feature;
             if (compFeature.canBeInstalled(monitor)) {
+                compFeature.needRestart();
                 messages.analyzeStatus(compFeature.install(monitor));
+                messages.setNeedRestart(compFeature.needRestart());
             }
         }
     }

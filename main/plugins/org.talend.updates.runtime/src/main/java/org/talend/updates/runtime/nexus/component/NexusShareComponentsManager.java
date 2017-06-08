@@ -46,7 +46,7 @@ public class NexusShareComponentsManager {
     private File workFolder;
 
     /**
-     * for NexusServerBean, the repositoryBaseURI , userName and password are required.
+     * for NexusServerBean, the repositoryId , userName and password are required.
      *
      */
     public NexusShareComponentsManager(final NexusServerBean compNexusServer) {

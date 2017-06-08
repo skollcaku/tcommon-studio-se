@@ -30,14 +30,13 @@ import org.talend.commons.runtime.service.PatchComponent;
 import org.talend.commons.utils.resource.UpdatesHelper;
 import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.nexus.component.ComponentIndexManager;
+import org.talend.updates.runtime.utils.OsgiBundleInstaller;
 import org.talend.updates.runtime.utils.PathUtils;
 
 /**
  * DOC ggu class global comment. Detailled comment
  */
 public class LocalComponentsInstallComponent implements ComponentsInstallComponent {
-
-    private boolean needRelaunch;
 
     private InstallComponentMessages messages = new InstallComponentMessages();
 
@@ -56,7 +55,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
 
     @Override
     public boolean needRelaunch() {
-        return needRelaunch;
+        return messages.isNeedRestart();
     }
 
     @Override
@@ -68,7 +67,6 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
     }
 
     private void reset() {
-        needRelaunch = false;
         if (failedComponents != null) {
             failedComponents.clear();
         }
@@ -136,7 +134,11 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
         if (Platform.inDevelopmentMode()) { // for dev, no need install patches.
             return false;
         }
-        return doInstall();
+        boolean installed = doInstall();
+        if (installed && !needRelaunch()) {
+            OsgiBundleInstaller.reloadComponents();
+        }
+        return installed;
     }
 
     protected boolean doInstall() {
@@ -148,7 +150,7 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                 // because in patches folder, will do after install user components.
                 installFromFolder(getPatchesFolder());
             }
-            return needRelaunch = (getFailureMessage() == null && getInstalledMessages() != null);
+            return getFailureMessage() == null && getInstalledMessages() != null;
         } catch (Exception e) {
             if (!CommonsPlugin.isHeadless()) {
                 // make sure to popup error dialog for studio
@@ -179,10 +181,12 @@ public class LocalComponentsInstallComponent implements ComponentsInstallCompone
                         ComponentP2ExtraFeature feature = new ComponentP2ExtraFeature(f);
                         feature.setLogin(isLogin);
                         NullProgressMonitor progressMonitor = new NullProgressMonitor();
+                        // boolean installedBefore = feature.isInstalled(progressMonitor);
                         if (feature.canBeInstalled(progressMonitor)) {
                             List<URI> repoUris = new ArrayList<>(1);
                             repoUris.add(PathUtils.getP2RepURIFromCompFile(f));
                             messages.analyzeStatus(feature.install(progressMonitor, repoUris));
+                            messages.setNeedRestart(feature.needRestart());
                         }
                     } catch (Exception e) { // sometime, if reinstall it, will got one exception also.
                         // won't block others to install.

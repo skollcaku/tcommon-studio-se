@@ -95,7 +95,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#isInstalled(org.eclipse.core.runtime.IProgressMonitor)
      */
     @Override
@@ -212,7 +212,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#getName()
      */
     @Override
@@ -222,7 +222,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#getDescription()
      */
     @Override
@@ -232,7 +232,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#getVersion()
      */
     @Override
@@ -242,7 +242,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#install(org.eclipse.core.runtime.IProgressMonitor, java.util.List)
      */
     @Override
@@ -256,8 +256,8 @@ public class P2ExtraFeature implements ExtraFeature {
             } // else legacy p2 install will update the config.ini
             doInstallStatus = doInstall(progress, allRepoUris);
         } catch (IOException e) {
-            throw new P2ExtraFeatureException(
-                    new ProvisionException(Messages.createErrorStatus(e, "ExtraFeaturesFactory.restore.config.error"))); //$NON-NLS-1$
+            throw new P2ExtraFeatureException(new ProvisionException(Messages.createErrorStatus(e,
+                    "ExtraFeaturesFactory.restore.config.error"))); //$NON-NLS-1$
         } finally {
             if (doInstallStatus != null && doInstallStatus.isOK()) {
                 afterInstall();
@@ -268,8 +268,8 @@ public class P2ExtraFeature implements ExtraFeature {
                 try {
                     copyConfigFile(configIniBackupFile);
                 } catch (IOException e) {
-                    throw new P2ExtraFeatureException(
-                            new ProvisionException(Messages.createErrorStatus(e, "ExtraFeaturesFactory.back.config.error"))); //$NON-NLS-1$
+                    throw new P2ExtraFeatureException(new ProvisionException(Messages.createErrorStatus(e,
+                            "ExtraFeaturesFactory.back.config.error"))); //$NON-NLS-1$
                 }
             }
         }
@@ -350,8 +350,8 @@ public class P2ExtraFeature implements ExtraFeature {
             IPhaseSet talendPhaseSet = PhaseSetFactory
                     .createDefaultPhaseSetExcluding(new String[] { PhaseSetFactory.PHASE_CHECK_TRUST });
 
-            ProfileModificationJob provisioningJob = (ProfileModificationJob) installOperation
-                    .getProvisioningJob(subMonitor.newChild(1));
+            ProfileModificationJob provisioningJob = (ProfileModificationJob) installOperation.getProvisioningJob(subMonitor
+                    .newChild(1));
             if (subMonitor.isCanceled()) {
                 return Messages.createCancelStatus("user.cancel.installation.of.feature", //$NON-NLS-1$
                         getName());
@@ -439,7 +439,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see java.lang.Object#hashCode()
      */
     @Override
@@ -453,7 +453,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see java.lang.Object#equals(java.lang.Object)
      */
     @Override
@@ -495,21 +495,21 @@ public class P2ExtraFeature implements ExtraFeature {
     }
 
     public URI getP2RepositoryURI() {
-        return getP2RepositoryURI(null,false);
+        return getP2RepositoryURI(null, false);
     }
 
-    public URI getP2RepositoryURI(String key,boolean isTOS) {
+    public URI getP2RepositoryURI(String key, boolean isTOS) {
         String uriString = getBaseRepoUriString();
-        if(key==null){
+        if (key == null) {
             key = "talend.p2.repo.url"; //$NON-NLS-1$
         }
         String p2RepoUrlFromProp = System.getProperty(key);
-        if (!isTOS&&p2RepoUrlFromProp != null) {
+        if (!isTOS && p2RepoUrlFromProp != null) {
             uriString = p2RepoUrlFromProp;
         } else {
             org.osgi.framework.Version studioVersion = new org.osgi.framework.Version(VersionUtils.getTalendVersion());
             String version = studioVersion.getMajor() + "." + studioVersion.getMinor() + "." + studioVersion.getMicro();
-            if(uriString==null){
+            if (uriString == null) {
                 return URI.create(version);
             }
             uriString = uriString + (uriString.endsWith("/") ? "" : "/") + version; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -532,7 +532,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#updateSiteCompatibleTypes()
      */
     @Override
@@ -542,7 +542,7 @@ public class P2ExtraFeature implements ExtraFeature {
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see org.talend.updates.model.ExtraFeature#mustBeInstalled()
      */
     @Override
@@ -707,27 +707,27 @@ public class P2ExtraFeature implements ExtraFeature {
         return true;
     }
 
-
     /**
      * Sets the name.
+     * 
      * @param name the name to set
      */
     public void setName(String name) {
         this.name = name;
     }
 
-
     /**
      * Getter for parentCategory.
+     * 
      * @return the parentCategory
      */
     public FeatureCategory getParentCategory() {
         return this.parentCategory;
     }
 
-
     /**
      * Sets the parentCategory.
+     * 
      * @param parentCategory the parentCategory to set
      */
     public void setParentCategory(FeatureCategory parentCategory) {
@@ -737,7 +737,7 @@ public class P2ExtraFeature implements ExtraFeature {
     public P2ExtraFeature getInstalledFeature(IProgressMonitor progress) throws P2ExtraFeatureException {
         P2ExtraFeature extraFeature = null;
         try {
-            if (!this.isInstalled(progress)) {
+            if (!this.isInstalled(progress)) { // new
                 extraFeature = this;
             } else {// else already installed so try to find updates
                 ExtraFeature updateFeature = this.createFeatureIfUpdates(progress);

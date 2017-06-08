@@ -28,6 +28,8 @@ public class InstallComponentMessages {
 
     private final MultiStatus multiStatus;
 
+    private boolean needRestart = false;
+
     public InstallComponentMessages() {
         multiStatus = new MultiStatus(FrameworkUtil.getBundle(this.getClass()).getSymbolicName(), IStatus.OK, null, null);
     }
@@ -35,6 +37,17 @@ public class InstallComponentMessages {
     public void reset() {
         installedMessage = null;
         failureMessage = null;
+        needRestart = false;
+    }
+
+    public boolean isNeedRestart() {
+        return needRestart;
+    }
+
+    public void setNeedRestart(boolean needRestart) {
+        if (needRestart) { // only true, will be set, means keep restart flag always
+            this.needRestart = needRestart;
+        }
     }
 
     public String getInstalledMessage() {
