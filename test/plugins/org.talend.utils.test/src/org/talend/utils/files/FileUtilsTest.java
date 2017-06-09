@@ -27,8 +27,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.talend.utils.files.FileUtils;
-import org.talend.utils.files.FilterInfo;
 import org.talend.utils.sugars.ReturnCode;
 
 public class FileUtilsTest {
@@ -164,5 +162,21 @@ public class FileUtilsTest {
         assertEquals(files.size(), 3);
         assertTrue(files.containsAll(expectedFiles));
 
+    }
+
+    @Test
+    public void deleteFilesTest() throws IOException {
+
+        folder1.newFile("myfile.txt"); //$NON-NLS-1$
+        folder1.newFile("myfile2.txt"); //$NON-NLS-1$
+        folder1.newFile("myfile2.zip"); //$NON-NLS-1$
+
+        File folder1File = folder1.getRoot();
+
+        FileUtils.deleteFiles(folder1File, name -> false);
+        assertEquals(folder1File.listFiles().length, 3);
+
+        FileUtils.deleteFiles(folder1File, name -> name.endsWith(".txt")); //$NON-NLS-1$
+        assertEquals(folder1File.listFiles().length, 1);
     }
 }
