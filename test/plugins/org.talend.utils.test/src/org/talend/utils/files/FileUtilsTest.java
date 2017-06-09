@@ -178,5 +178,11 @@ public class FileUtilsTest {
 
         FileUtils.deleteFiles(folder1File, name -> name.endsWith(".txt")); //$NON-NLS-1$
         assertEquals(folder1File.listFiles().length, 1);
+
+        FileUtils.deleteFiles(null, name -> name.endsWith(".txt")); //$NON-NLS-1$
+        assertEquals(folder1File.listFiles().length, 1);
+
+        FileUtils.deleteFiles(folder1File, null);
+        assertEquals(folder1File.listFiles().length, 1);
     }
 }
