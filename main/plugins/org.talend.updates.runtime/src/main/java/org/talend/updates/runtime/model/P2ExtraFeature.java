@@ -47,6 +47,7 @@ import org.eclipse.equinox.p2.operations.UpdateOperation;
 import org.eclipse.equinox.p2.query.IQuery;
 import org.eclipse.equinox.p2.query.IQueryResult;
 import org.eclipse.equinox.p2.query.QueryUtil;
+import org.eclipse.equinox.p2.repository.IRepositoryManager;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepositoryManager;
 import org.eclipse.equinox.p2.repository.metadata.IMetadataRepositoryManager;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -70,7 +71,7 @@ import org.talend.utils.json.JSONObject;
 public class P2ExtraFeature implements ExtraFeature {
 
     private static Logger log = Logger.getLogger(P2ExtraFeature.class);
-    
+
     protected String p2IuId;// p2 installable unit id
 
     protected String baseRepoUriStr;// default url of the remote repo where to look for the feature to install
@@ -86,7 +87,7 @@ public class P2ExtraFeature implements ExtraFeature {
     protected boolean mustBeInstalled;
 
     protected boolean useLegacyP2Install;
-    
+
     protected FeatureCategory parentCategory;
 
     protected P2ExtraFeature() {
@@ -256,8 +257,8 @@ public class P2ExtraFeature implements ExtraFeature {
             } // else legacy p2 install will update the config.ini
             doInstallStatus = doInstall(progress, allRepoUris);
         } catch (IOException e) {
-            throw new P2ExtraFeatureException(
-                    new ProvisionException(Messages.createErrorStatus(e, "ExtraFeaturesFactory.restore.config.error"))); //$NON-NLS-1$
+            throw new P2ExtraFeatureException(new ProvisionException(Messages.createErrorStatus(e,
+                    "ExtraFeaturesFactory.restore.config.error"))); //$NON-NLS-1$
         } finally {
             if (doInstallStatus != null && doInstallStatus.isOK()) {
                 afterInstall();
@@ -268,16 +269,16 @@ public class P2ExtraFeature implements ExtraFeature {
                 try {
                     copyConfigFile(configIniBackupFile);
                 } catch (IOException e) {
-                    throw new P2ExtraFeatureException(
-                            new ProvisionException(Messages.createErrorStatus(e, "ExtraFeaturesFactory.back.config.error"))); //$NON-NLS-1$
+                    throw new P2ExtraFeatureException(new ProvisionException(Messages.createErrorStatus(e,
+                            "ExtraFeaturesFactory.back.config.error"))); //$NON-NLS-1$
                 }
             }
         }
         return doInstallStatus;
     }
-    
+
     protected void afterInstall() {
-        
+
     }
 
     private void storeInstalledFeatureMessage() {
@@ -350,8 +351,8 @@ public class P2ExtraFeature implements ExtraFeature {
             IPhaseSet talendPhaseSet = PhaseSetFactory
                     .createDefaultPhaseSetExcluding(new String[] { PhaseSetFactory.PHASE_CHECK_TRUST });
 
-            ProfileModificationJob provisioningJob = (ProfileModificationJob) installOperation
-                    .getProvisioningJob(subMonitor.newChild(1));
+            ProfileModificationJob provisioningJob = (ProfileModificationJob) installOperation.getProvisioningJob(subMonitor
+                    .newChild(1));
             if (subMonitor.isCanceled()) {
                 return Messages.createCancelStatus("user.cancel.installation.of.feature", //$NON-NLS-1$
                         getName());
@@ -427,6 +428,14 @@ public class P2ExtraFeature implements ExtraFeature {
         // create the feature query
         IQuery<IInstallableUnit> iuQuery = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(getP2IuId()));
 
+        // remove existing repositories
+        for (URI existingRepUri : metadataManager.getKnownRepositories(IRepositoryManager.REPOSITORIES_ALL)) {
+            metadataManager.removeRepository(existingRepUri);
+        }
+        for (URI existingRepUri : artifactManager.getKnownRepositories(IRepositoryManager.REPOSITORIES_ALL)) {
+            metadataManager.removeRepository(existingRepUri);
+        }
+
         for (URI repoUri : allRepoUris) {
             metadataManager.addRepository(repoUri);
             artifactManager.addRepository(repoUri);
@@ -493,23 +502,23 @@ public class P2ExtraFeature implements ExtraFeature {
     public String getBaseRepoUriString() {
         return this.baseRepoUriStr;
     }
-    
+
     public URI getP2RepositoryURI() {
-        return getP2RepositoryURI(null,false);
+        return getP2RepositoryURI(null, false);
     }
 
-    public URI getP2RepositoryURI(String key,boolean isTOS) {
+    public URI getP2RepositoryURI(String key, boolean isTOS) {
         String uriString = getBaseRepoUriString();
-        if(key==null){
+        if (key == null) {
             key = "talend.p2.repo.url"; //$NON-NLS-1$
         }
         String p2RepoUrlFromProp = System.getProperty(key);
-        if (!isTOS&&p2RepoUrlFromProp != null) {
+        if (!isTOS && p2RepoUrlFromProp != null) {
             uriString = p2RepoUrlFromProp;
         } else {
             org.osgi.framework.Version studioVersion = new org.osgi.framework.Version(VersionUtils.getTalendVersion());
             String version = studioVersion.getMajor() + "." + studioVersion.getMinor() + "." + studioVersion.getMicro();
-            if(uriString==null){
+            if (uriString == null) {
                 return URI.create(version);
             }
             uriString = uriString + (uriString.endsWith("/") ? "" : "/") + version; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -707,27 +716,27 @@ public class P2ExtraFeature implements ExtraFeature {
         return true;
     }
 
-    
     /**
      * Sets the name.
+     * 
      * @param name the name to set
      */
     public void setName(String name) {
         this.name = name;
     }
 
-    
     /**
      * Getter for parentCategory.
+     * 
      * @return the parentCategory
      */
     public FeatureCategory getParentCategory() {
         return this.parentCategory;
     }
 
-    
     /**
      * Sets the parentCategory.
+     * 
      * @param parentCategory the parentCategory to set
      */
     public void setParentCategory(FeatureCategory parentCategory) {
