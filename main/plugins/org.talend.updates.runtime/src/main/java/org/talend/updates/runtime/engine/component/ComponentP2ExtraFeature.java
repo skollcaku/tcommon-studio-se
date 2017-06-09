@@ -291,16 +291,13 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                     File tempUpdateSiteFolder = getTempUpdateSiteFolder();
                     FilesUtils.unzip(compFile.getAbsolutePath(), tempUpdateSiteFolder.getAbsolutePath());
 
+                    syncComponentsToLocalNexus(progress, compFile);
                     syncLibraries(tempUpdateSiteFolder);
                     syncM2Repository(tempUpdateSiteFolder);
-
-                    File installedCompFile = new File(installedComponentFolder, compFile.getName());
-                    FilesUtils.copyFile(compFile, installedCompFile);
-                    compFile.delete(); // delete original file.
-
-                    ComponentsDeploymentManager.getInstance().deployComponentsToLocalNexus(progress, installedCompFile);
-
                     installAndStartComponent(tempUpdateSiteFolder);
+
+                    moveToSharedFolder(installedComponentFolder, compFile);
+
                 }
             }
         } catch (Exception e) {
@@ -353,6 +350,12 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
         }
     }
 
+    protected void moveToSharedFolder(File installedComponentFolder, File compFile) throws IOException {
+        File installedCompFile = new File(installedComponentFolder, compFile.getName());
+        FilesUtils.copyFile(compFile, installedCompFile);
+        compFile.delete(); // delete original file.
+    }
+
     protected void installAndStartComponent(File tempUpdateSiteFolder) {
         File tmpPluginsFolder = new File(tempUpdateSiteFolder, UpdatesHelper.FOLDER_PLUGINS);
         if (!tmpPluginsFolder.exists()) {
@@ -384,6 +387,10 @@ public class ComponentP2ExtraFeature extends P2ExtraFeature {
                 return; // no need install others
             }
         }
+    }
+
+    protected void syncComponentsToLocalNexus(IProgressMonitor progress, File installedCompFile) throws IOException {
+        ComponentsDeploymentManager.getInstance().deployComponentsToLocalNexus(progress, installedCompFile);
     }
 
     protected File getTempUpdateSiteFolder() {

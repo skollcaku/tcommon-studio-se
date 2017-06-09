@@ -156,7 +156,7 @@ public class ComponentsNexusInstallFactory extends AbstractExtraUpdatesFactory {
                     }
                 }
 
-                final ComponentNexusP2ExtraFeature cnFeature = new ComponentNexusP2ExtraFeature(b);
+                final ComponentNexusP2ExtraFeature cnFeature = createComponentFeature(b);
                 // use same url and user with index
                 cnFeature.setNexusURL(defaultFeature.getNexusURL());
                 cnFeature.setNexusUser(defaultFeature.getNexusUser());
@@ -167,6 +167,10 @@ public class ComponentsNexusInstallFactory extends AbstractExtraUpdatesFactory {
             }
         }
         return p2Features;
+    }
+
+    protected ComponentNexusP2ExtraFeature createComponentFeature(ComponentIndexBean b) {
+        return new ComponentNexusP2ExtraFeature(b);
     }
 
     @Override

@@ -26,17 +26,18 @@ public class InstallComponentMessages {
 
     private String failureMessage;
 
-    private final MultiStatus multiStatus;
+    private MultiStatus multiStatus;
 
     private boolean needRestart = false;
 
     public InstallComponentMessages() {
-        multiStatus = new MultiStatus(FrameworkUtil.getBundle(this.getClass()).getSymbolicName(), IStatus.OK, null, null);
+        reset();
     }
 
     public void reset() {
         installedMessage = null;
         failureMessage = null;
+        multiStatus = new MultiStatus(FrameworkUtil.getBundle(this.getClass()).getSymbolicName(), IStatus.OK, null, null);
         needRestart = false;
     }
 
@@ -77,6 +78,10 @@ public class InstallComponentMessages {
     }
 
     public boolean isOk() {
-        return multiStatus.isOK();
+        // have set the status
+        if (multiStatus.getChildren() != null && multiStatus.getChildren().length > 0) {
+            return multiStatus.isOK();
+        }
+        return false;
     }
 }

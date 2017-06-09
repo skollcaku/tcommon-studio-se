@@ -12,12 +12,15 @@
 // ============================================================================
 package org.talend.updates.runtime.login;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -31,6 +34,7 @@ import org.talend.updates.runtime.model.ExtraFeature;
 import org.talend.updates.runtime.model.FeatureCategory;
 import org.talend.updates.runtime.model.P2ExtraFeature;
 import org.talend.updates.runtime.model.P2ExtraFeatureException;
+import org.talend.updates.runtime.nexus.component.ComponentIndexBean;
 import org.talend.updates.runtime.utils.OsgiBundleInstaller;
 
 /**
@@ -46,6 +50,26 @@ public class InstallLocalNexusComponentsLoginTask extends AbstractLoginTask {
         @Override
         protected Set<P2ExtraFeature> getAllExtraFeatures(IProgressMonitor monitor) {
             return getLocalNexusFeatures(monitor); // only get from local nexus
+        }
+
+        @Override
+        protected ComponentNexusP2ExtraFeature createComponentFeature(ComponentIndexBean b) {
+            return new ComponentNexusP2ExtraFeature(b) {
+
+                @Override
+                protected void syncComponentsToLocalNexus(IProgressMonitor progress, File installedCompFile) throws IOException {
+                    // already shared, no need deploy again
+                    // super.deployComponentsToLocalNexus(progress, installedCompFile);
+                }
+
+                @Override
+                protected void moveToSharedFolder(File installedComponentFolder, File compFile) throws IOException {
+                    // already shared, so no need keep it in local, and try to delete the downloaded one.
+                    // super.moveToSharedFolder(installedComponentFolder, compFile);
+                    compFile.delete();
+                }
+
+            };
         }
 
     }
@@ -74,15 +98,18 @@ public class InstallLocalNexusComponentsLoginTask extends AbstractLoginTask {
                 install(monitor, feature, messages);
             }
 
-            log.info(messages.getInstalledMessage());
-            log.error(messages.getFailureMessage());
-
-            if (!CommonsPlugin.isHeadless()) { //
-                MessageDialog.openInformation(PlatformUI.getWorkbench().getDisplay().getActiveShell(),
-                        "Install components from Nexus", messages.getInstalledMessage());
+            if (messages.isOk()) {
+                log.info(messages.getInstalledMessage());
+                if (!CommonsPlugin.isHeadless()) { //
+                    MessageDialog.openInformation(PlatformUI.getWorkbench().getDisplay().getActiveShell(),
+                            "Install components from Nexus", messages.getInstalledMessage());
+                }
+                if (!messages.isNeedRestart()) {
+                    OsgiBundleInstaller.reloadComponents();
+                }
             }
-            if (messages.isOk() && !messages.isNeedRestart()) {
-                OsgiBundleInstaller.reloadComponents();
+            if (StringUtils.isNotEmpty(messages.getFailureMessage())) {
+                log.error(messages.getFailureMessage());
             }
         } catch (Exception e) {
             throw new InvocationTargetException(e);
@@ -100,7 +127,6 @@ public class InstallLocalNexusComponentsLoginTask extends AbstractLoginTask {
         if (feature instanceof ComponentNexusP2ExtraFeature) {
             ComponentNexusP2ExtraFeature compFeature = (ComponentNexusP2ExtraFeature) feature;
             if (compFeature.canBeInstalled(monitor)) {
-                compFeature.needRestart();
                 messages.analyzeStatus(compFeature.install(monitor));
                 messages.setNeedRestart(compFeature.needRestart());
             }
