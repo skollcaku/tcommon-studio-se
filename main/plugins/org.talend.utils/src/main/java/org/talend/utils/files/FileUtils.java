@@ -188,13 +188,13 @@ public final class FileUtils {
      * @param func a {@link Function} that will be used to filter on the files to delete, according to their name
      */
     public static void deleteFiles(File folder, Function<String, Boolean> func) {
-        if (folder != null) {
+        if (folder != null && func != null) {
             if (folder.exists()) {
                 FilenameFilter filter = new FilenameFilter() {
 
                     @Override
                     public boolean accept(File _dir, String name) {
-                        return func != null && func.apply(name);
+                        return func.apply(name);
                     }
 
                 };
