@@ -12,12 +12,15 @@
 // ============================================================================
 package org.talend.designer.maven.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.talend.commons.utils.VersionUtils;
 import org.talend.core.model.general.Project;
 import org.talend.core.model.process.JobInfo;
 import org.talend.core.model.properties.Property;
 import org.talend.core.model.utils.JavaResourcesHelper;
 import org.talend.core.runtime.maven.MavenConstants;
+import org.talend.core.runtime.projectsetting.ProjectPreferenceManager;
+import org.talend.designer.maven.DesignerMavenPlugin;
 import org.talend.designer.maven.model.TalendMavenConstants;
 import org.talend.repository.ProjectManager;
 
@@ -54,7 +57,16 @@ public class PomIdsHelper {
      * 
      */
     public static String getProjectVersion() {
-        return PomUtil.getDefaultMavenVersion();
+        ProjectPreferenceManager projectPreferenceManager = DesignerMavenPlugin.getPlugin().getProjectPreferenceManager();
+        String projectVersion = projectPreferenceManager.getValue(MavenConstants.PROJECT_VERSION);
+        if (StringUtils.isBlank(projectVersion)){
+            projectVersion = PomUtil.getDefaultMavenVersion();
+        }
+        boolean useSnapshot = projectPreferenceManager.getBoolean(MavenConstants.NAME_PUBLISH_AS_SNAPSHOT);
+        if (useSnapshot) {
+            projectVersion += "-SNAPSHOT"; //$NON-NLS-1$
+        }
+        return projectVersion;
     }
 
     /**
@@ -87,7 +99,7 @@ public class PomIdsHelper {
      * 
      */
     public static String getCodesVersion() {
-        return PomUtil.getDefaultMavenVersion();
+        return getProjectVersion();
     }
 
     /**
